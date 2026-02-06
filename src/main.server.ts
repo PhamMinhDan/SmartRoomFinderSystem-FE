@@ -1,8 +1,10 @@
-import { BootstrapContext, bootstrapApplication } from '@angular/platform-browser';
-import { App } from './app/app';
+// src/main.server.ts
+import 'zone.js/node';  // ← Dòng này rất quan trọng cho SSR/Node
+
+import { bootstrapApplication, BootstrapContext } from '@angular/platform-browser';
+import { AppComponent } from './app/app.component';
 import { config } from './app/app.config.server';
 
-const bootstrap = (context: BootstrapContext) =>
-    bootstrapApplication(App, config, context);
-
-export default bootstrap;
+export default async function bootstrap(context: BootstrapContext) {
+  return bootstrapApplication(AppComponent, config, context);
+}

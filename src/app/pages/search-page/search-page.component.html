@@ -1,0 +1,194 @@
+<!-- search-page.component.html -->
+<div class="min-h-screen bg-gray-50 pt-20">
+  <div class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <h1 class="text-4xl font-bold text-white mb-2">Tìm phòng trọ, căn hộ, nhà nguyên căn phù hợp nhất</h1>
+      <p class="text-gray-300">Hơn 12,500 tin đăng được cập nhật mỗi ngày</p>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-12 relative z-10 mb-8">
+    <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-8">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Thành phố</label>
+          <select [(ngModel)]="city" class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-[#00C897] focus:border-transparent outline-none">
+            <option>Hà Nội</option>
+            <option>TP. Hồ Chí Minh</option>
+            <option>Đà Nẵng</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Quận/Huyện</label>
+          <select [(ngModel)]="district" class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-[#00C897] focus:border-transparent outline-none">
+            <option value="">Tất cả</option>
+            <option *ngFor="let d of getDistricts()" [value]="d">{{ d }}</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Loại phòng</label>
+          <select [(ngModel)]="roomType" class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-[#00C897] focus:border-transparent outline-none">
+            <option value="">Tất cả</option>
+            <option>Phòng trọ</option>
+            <option>Căn hộ mini</option>
+            <option>Nhà nguyên căn</option>
+            <option>Ở ghép</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Giá (triệu)</label>
+          <div class="flex gap-2">
+            <input type="number" [(ngModel)]="priceMin" min="1" max="15" class="w-1/2 px-3 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-[#00C897] outline-none" />
+            <input type="number" [(ngModel)]="priceMax" min="1" max="15" class="w-1/2 px-3 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-[#00C897] outline-none" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Diện tích (m²)</label>
+          <div class="flex gap-2">
+            <input type="number" [(ngModel)]="areaMin" min="5" max="200" class="w-1/2 px-3 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-[#00C897] outline-none" />
+            <input type="number" [(ngModel)]="areaMax" min="5" max="200" class="w-1/2 px-3 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-[#00C897] outline-none" />
+          </div>
+        </div>
+
+        <div class="flex items-end">
+          <button class="w-full bg-[#FF6B6B] text-white px-6 py-3 rounded-lg hover:bg-[#FF5E3A] transition-all font-bold shadow-lg flex items-center justify-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+            Tìm kiếm
+          </button>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-3">Tiện nghi</label>
+        <div class="flex flex-wrap gap-2">
+          <button *ngFor="let amenity of amenitiesList" (click)="toggleAmenity(amenity)"
+            [ngClass]="isAmenitySelected(amenity) ? 'bg-[#00C897] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+            class="px-4 py-2 rounded-full text-sm font-medium transition-all">
+            {{ amenity }}
+          </button>
+        </div>
+      </div>
+
+      <div class="flex justify-between items-center mt-4 pt-4 border-t">
+        <button (click)="resetFilters()" class="text-[#00C897] font-semibold hover:underline">
+          Reset bộ lọc
+        </button>
+        <div class="flex gap-2">
+          <select class="px-4 py-2 border-2 border-gray-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-[#00C897] outline-none">
+            <option>Mới nhất</option>
+            <option>Giá thấp → cao</option>
+            <option>Giá cao → thấp</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold text-gray-900">
+        Tìm thấy <span class="text-[#FF6B6B]">4,872</span> phòng phù hợp
+      </h2>
+      <div class="flex gap-2">
+        <button (click)="view = 'grid'" [ngClass]="view === 'grid' ? 'bg-[#00C897] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'" class="px-4 py-2 rounded-lg font-medium transition-all">
+          Grid
+        </button>
+        <button (click)="view = 'list'" [ngClass]="view === 'list' ? 'bg-[#00C897] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'" class="px-4 py-2 rounded-lg font-medium transition-all">
+          List
+        </button>
+      </div>
+    </div>
+
+    <div [ngClass]="view === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-4'">
+      <div *ngFor="let listing of listings"
+        [ngClass]="view === 'list' ? 'flex gap-4' : ''"
+        class="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all border border-gray-100">
+        <div [ngClass]="view === 'list' ? 'w-48 flex-shrink-0' : ''">
+          <div class="relative overflow-hidden h-56">
+            <img [src]="listing.image" [alt]="listing.title" class="w-full h-full object-cover hover:scale-110 transition-transform duration-500" loading="lazy" />
+            <div class="absolute top-4 left-4">
+              <span class="bg-[#FF6B6B] text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
+                {{ listing.status }}
+              </span>
+            </div>
+            <button class="absolute top-4 right-4 bg-white/90 p-2 rounded-full hover:bg-white shadow-lg">
+              <svg class="w-5 h-5 text-gray-600 hover:text-[#FF6B6B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+              </svg>
+            </button>
+            <div class="absolute bottom-4 left-4 bg-white/95 px-4 py-2 rounded-lg shadow-lg">
+              <span class="text-2xl font-bold text-[#FF6B6B]">{{ listing.price }}</span>
+              <span class="text-sm text-gray-600">/tháng</span>
+            </div>
+          </div>
+        </div>
+
+        <div [ngClass]="view === 'list' ? 'flex-1' : ''" class="p-5">
+          <h3 class="text-lg font-bold text-gray-900 mb-2 line-clamp-2 hover:text-[#00C897]">
+            {{ listing.title }}
+          </h3>
+
+          <div class="space-y-2 mb-3 text-sm">
+            <div class="flex items-center text-gray-600">
+              <svg class="w-4 h-4 mr-1 text-[#00C897]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </svg>
+              {{ listing.location }}
+            </div>
+            <div class="flex items-center text-gray-600">
+              <span class="text-xs">{{ listing.area }}m² • {{ listing.distance }}</span>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 mb-3">
+            <span class="text-sm font-bold text-gray-900">{{ listing.rating }}★</span>
+            <span class="text-sm text-gray-500">({{ listing.reviews }} đánh giá)</span>
+            <svg *ngIf="listing.verified" class="w-4 h-4 text-[#00C897]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+            </svg>
+          </div>
+
+          <div class="flex flex-wrap gap-2 mb-4">
+            <span *ngFor="let tag of listing.tags.slice(0, 3)" class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-xs font-medium">
+              {{ tag }}
+            </span>
+          </div>
+
+          <div class="flex items-center gap-2 mb-4">
+            <div class="w-8 h-8 rounded-full bg-[#00C897]/20 flex items-center justify-center text-sm font-bold text-[#00C897]">
+              {{ listing.owner.charAt(0) }}
+            </div>
+            <span class="text-sm font-medium text-gray-700">{{ listing.owner }}</span>
+          </div>
+
+          <div class="flex gap-2">
+            <button class="flex-1 border-2 border-[#00C897] text-[#00C897] py-2 rounded-lg font-bold hover:bg-[#00C897]/10 transition-colors">
+              Xem chi tiết
+            </button>
+            <button class="flex-1 bg-[#FF6B6B] text-white py-2 rounded-lg font-bold hover:bg-[#FF5E3A] transition-colors flex items-center justify-center">
+              <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+              </svg>
+              Chat
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex justify-center items-center gap-2 mt-12">
+      <button *ngFor="let page of createRange(5)" [ngClass]="page === 1 ? 'bg-[#00C897] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'" class="px-4 py-2 rounded-lg font-medium transition-all">
+        {{ page }}
+      </button>
+      <span class="px-4 py-2">...</span>
+      <button class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium">10</button>
+    </div>
+  </div>
+</div>
