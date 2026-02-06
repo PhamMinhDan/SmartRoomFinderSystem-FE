@@ -1,0 +1,47 @@
+<!-- how-it-works.component.html -->
+<div class="py-20 bg-white">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-16">
+      <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+        Cách thức hoạt động
+      </h2>
+      <p class="text-lg text-gray-600">
+        Chỉ 3 bước đơn giản để tìm được phòng trọ mơ ước
+      </p>
+    </div>
+
+    <div class="relative">
+      <div class="hidden lg:block absolute top-1/2 left-0 right-0 h-1 bg-gradient-to-r from-[#FF6B35] via-[#00A896] to-[#FFD60A] transform -translate-y-1/2"></div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12 relative">
+        <div *ngFor="let step of steps; let i = index; let isLast = last" class="relative">
+          <div class="bg-white p-8 rounded-2xl shadow-lg border-2 border-gray-100 hover:border-[#FF6B35] transition-all duration-300 relative z-10">
+            <div [ngClass]="'bg-gradient-to-br ' + step.color" 
+              class="w-20 h-20 rounded-2xl flex items-center justify-center mb-6 mx-auto shadow-lg">
+              <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="getIconPath(step.icon)"/>
+              </svg>
+            </div>
+
+            <div class="text-center mb-4">
+              <span class="text-5xl font-bold text-gray-100">{{ step.number }}</span>
+            </div>
+
+            <h3 class="text-xl font-bold text-gray-900 mb-3 text-center">
+              {{ step.title }}
+            </h3>
+            <p class="text-gray-600 text-center leading-relaxed">
+              {{ step.description }}
+            </p>
+          </div>
+
+          <div *ngIf="!isLast" class="hidden md:block absolute top-1/2 -right-6 lg:-right-6 transform -translate-y-1/2 z-20">
+            <svg class="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

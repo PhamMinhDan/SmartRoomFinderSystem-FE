@@ -1,0 +1,84 @@
+<header class="fixed top-0 left-0 right-0 bg-white shadow-lg z-50">
+  <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+    <!-- Logo -->
+    <a routerLink="/" class="flex items-center space-x-2 cursor-pointer">
+      <svg class="w-8 h-8 text-[#00C897]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+              d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+      </svg>
+      <span class="text-2xl font-bold text-gray-900">RoomFinder.vn</span>
+    </a>
+
+    <!-- Menu desktop -->
+    <div class="hidden lg:flex items-center space-x-8">
+      <a routerLink="/" routerLinkActive="text-[#00C897]" [routerLinkActiveOptions]="{exact: true}" 
+         class="font-medium text-gray-700 hover:text-[#00C897] transition-colors cursor-pointer">
+        Trang chủ
+      </a>
+      <a routerLink="/search" routerLinkActive="text-[#00C897]" 
+         class="font-medium text-gray-700 hover:text-[#00C897] transition-colors cursor-pointer">
+        Tìm phòng
+      </a>
+      <a routerLink="/blog" routerLinkActive="text-[#00C897]" 
+         class="font-medium text-gray-700 hover:text-[#00C897] transition-colors cursor-pointer">
+        Blog
+      </a>
+      <button class="bg-[#FF6B6B] text-white px-6 py-2.5 rounded-full hover:bg-[#FF5E3A] transition-colors font-bold cursor-pointer">
+        Đăng tin miễn phí
+      </button>
+    </div>
+
+    <!-- Auth desktop -->
+    <div class="hidden lg:flex items-center space-x-4">
+      <button 
+        (click)="openLoginModal()"
+        class="border-2 border-[#00C897] text-[#00C897] px-6 py-2.5 rounded-lg font-medium hover:bg-[#00C897]/10 transition-colors cursor-pointer pointer-events-auto z-50 relative">
+        Đăng nhập
+      </button>
+    </div>
+
+    <!-- Hamburger mobile -->
+    <button 
+      (click)="toggleMenu()" 
+      class="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer">
+      <svg *ngIf="!isOpen" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+      </svg>
+      <svg *ngIf="isOpen" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+      </svg>
+    </button>
+  </nav>
+
+  <!-- Mobile menu -->
+  <div *ngIf="isOpen" class="lg:hidden bg-gray-50 border-t">
+    <div class="px-4 py-6 space-y-4">
+      <a routerLink="/" (click)="toggleMenu()" class="block py-2 font-medium text-gray-700 hover:text-[#00C897] cursor-pointer">
+        Trang chủ
+      </a>
+      <a routerLink="/search" (click)="toggleMenu()" class="block py-2 font-medium text-gray-700 hover:text-[#00C897] cursor-pointer">
+        Tìm phòng
+      </a>
+      <a routerLink="/blog" (click)="toggleMenu()" class="block py-2 font-medium text-gray-700 hover:text-[#00C897] cursor-pointer">
+        Blog
+      </a>
+      <button class="w-full bg-[#FF6B6B] text-white px-6 py-3 rounded-lg font-bold hover:bg-[#FF5E3A] transition-colors cursor-pointer">
+        Đăng tin miễn phí
+      </button>
+
+      <div class="border-t pt-4">
+        <button 
+          (click)="openLoginModal(); toggleMenu()"
+          class="w-full border-2 border-[#00C897] text-[#00C897] px-6 py-3 rounded-lg font-bold hover:bg-[#00C897]/10 transition-colors cursor-pointer pointer-events-auto z-50 relative">
+          Đăng nhập
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal đăng nhập – đặt ở đây để nó là phần của header -->
+  <app-login-modal 
+    [isLoginOpen]="isLoginModalOpen"
+    (close)="closeLoginModal()">
+  </app-login-modal>
+</header>

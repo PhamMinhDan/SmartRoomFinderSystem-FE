@@ -1,0 +1,17 @@
+<div class="bg-gray-50 py-8 -mt-16 relative z-20">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center mb-4">
+      <h3 class="text-lg font-bold text-gray-800">Tìm kiếm nhanh</h3>
+    </div>
+    <div class="flex overflow-x-auto scrollbar-hide gap-3 pb-2">
+      <button *ngFor="let filter of filters"
+        [ngClass]="filter.color"
+        class="flex items-center px-5 py-2.5 rounded-full border-2 font-semibold whitespace-nowrap transition-all hover:shadow-md hover:-translate-y-0.5">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="getIconPath(filter.icon)"/>
+        </svg>
+        {{ filter.label }}
+      </button>
+    </div>
+  </div>
+</div>
