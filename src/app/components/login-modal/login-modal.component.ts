@@ -12,6 +12,7 @@ import { isPlatformBrowser, CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { Router } from '@angular/router';
+import { environment } from '../../../environments/environment';
 
 declare var google: any;
 
@@ -52,7 +53,7 @@ export class LoginModalComponent implements OnInit {
     if (typeof google === 'undefined') return;
 
     google.accounts.id.initialize({
-      client_id: '1027464859821-utavveetoebms99epjqat60kpjlsv62q.apps.googleusercontent.com',
+      client_id: environment.googleClientId,
       callback: this.handleGoogleSignIn.bind(this),
       use_fedcm_for_prompt: false,
     });
