@@ -20,6 +20,10 @@ header {
 .avatar-fallback {
   background: linear-gradient(135deg, #00c897 0%, #00a87a 100%);
 }
+.logo_header {
+  width: 80px;
+  height: 50px;
+}
 
 .mobile-menu {
   animation: slideDown 0.3s ease-out;
