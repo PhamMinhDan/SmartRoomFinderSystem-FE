@@ -1,0 +1,32 @@
+header {
+  transition: box-shadow 0.3s ease;
+}
+
+.user-menu-dropdown {
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.avatar-fallback {
+  background: linear-gradient(135deg, #00c897 0%, #00a87a 100%);
+}
+
+.mobile-menu {
+  animation: slideDown 0.3s ease-out;
+}
+
+@media (max-width: 1024px) {
+  .user-info {
+    font-size: 0.875rem;
+  }
+}

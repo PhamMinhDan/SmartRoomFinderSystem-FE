@@ -1,5 +1,4 @@
-// src/main.server.ts
-import 'zone.js/node';  // ← Dòng này rất quan trọng cho SSR/Node
+import 'zone.js/node';
 
 import { bootstrapApplication, BootstrapContext } from '@angular/platform-browser';
 import { AppComponent } from './app/app.component';

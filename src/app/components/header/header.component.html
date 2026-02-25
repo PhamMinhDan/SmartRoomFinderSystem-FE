@@ -3,49 +3,157 @@
     <!-- Logo -->
     <a routerLink="/" class="flex items-center space-x-2 cursor-pointer">
       <svg class="w-8 h-8 text-[#00C897]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-              d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+        />
       </svg>
       <span class="text-2xl font-bold text-gray-900">RoomFinder.vn</span>
     </a>
 
     <!-- Menu desktop -->
     <div class="hidden lg:flex items-center space-x-8">
-      <a routerLink="/" routerLinkActive="text-[#00C897]" [routerLinkActiveOptions]="{exact: true}" 
-         class="font-medium text-gray-700 hover:text-[#00C897] transition-colors cursor-pointer">
+      <a
+        routerLink="/"
+        routerLinkActive="text-[#00C897]"
+        [routerLinkActiveOptions]="{ exact: true }"
+        class="font-medium text-gray-700 hover:text-[#00C897] transition-colors cursor-pointer"
+      >
         Trang chủ
       </a>
-      <a routerLink="/search" routerLinkActive="text-[#00C897]" 
-         class="font-medium text-gray-700 hover:text-[#00C897] transition-colors cursor-pointer">
+      <a
+        routerLink="/search"
+        routerLinkActive="text-[#00C897]"
+        class="font-medium text-gray-700 hover:text-[#00C897] transition-colors cursor-pointer"
+      >
         Tìm phòng
       </a>
-      <a routerLink="/blog" routerLinkActive="text-[#00C897]" 
-         class="font-medium text-gray-700 hover:text-[#00C897] transition-colors cursor-pointer">
+      <a
+        routerLink="/blog"
+        routerLinkActive="text-[#00C897]"
+        class="font-medium text-gray-700 hover:text-[#00C897] transition-colors cursor-pointer"
+      >
         Blog
       </a>
-      <button class="bg-[#FF6B6B] text-white px-6 py-2.5 rounded-full hover:bg-[#FF5E3A] transition-colors font-bold cursor-pointer">
+      <button
+        class="bg-[#FF6B6B] text-white px-6 py-2.5 rounded-full hover:bg-[#FF5E3A] transition-colors font-bold cursor-pointer"
+      >
         Đăng tin miễn phí
       </button>
     </div>
 
     <!-- Auth desktop -->
     <div class="hidden lg:flex items-center space-x-4">
-      <button 
+      <!-- Hiển thị khi chưa đăng nhập -->
+      <button
+        *ngIf="!currentUser"
         (click)="openLoginModal()"
-        class="border-2 border-[#00C897] text-[#00C897] px-6 py-2.5 rounded-lg font-medium hover:bg-[#00C897]/10 transition-colors cursor-pointer pointer-events-auto z-50 relative">
+        class="border-2 border-[#00C897] text-[#00C897] px-6 py-2.5 rounded-lg font-medium hover:bg-[#00C897]/10 transition-colors cursor-pointer"
+      >
         Đăng nhập
       </button>
+
+      <!-- Hiển thị khi đã đăng nhập -->
+      <div *ngIf="currentUser" class="relative">
+        <button
+          (click)="toggleUserMenu($event)"
+          class="flex items-center space-x-3 hover:bg-gray-50 rounded-lg px-3 py-2 transition-colors"
+        >
+          <!-- Avatar -->
+          <div class="relative">
+            <img
+              *ngIf="currentUser.avatar_url"
+              [src]="currentUser.avatar_url"
+              [alt]="currentUser.full_name"
+              class="w-10 h-10 rounded-full object-cover border-2 border-[#00C897]"
+            />
+            <div
+              *ngIf="!currentUser.avatar_url"
+              class="w-10 h-10 rounded-full bg-[#00C897] flex items-center justify-center text-white font-bold border-2 border-[#00C897]"
+            >
+              {{ getInitials(currentUser.full_name || currentUser.username) }}
+            </div>
+          </div>
+          <!-- Name -->
+          <span class="font-medium text-gray-700">
+            {{ currentUser.full_name || currentUser.username }}
+          </span>
+          <!-- Dropdown icon -->
+          <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M19 9l-7 7-7-7"
+            />
+          </svg>
+        </button>
+
+        <!-- Dropdown menu -->
+        <div
+          *ngIf="isUserMenuOpen"
+          class="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
+        >
+          <div class="px-4 py-3 border-b border-gray-200">
+            <p class="text-sm font-medium text-gray-900">
+              {{ currentUser.full_name || currentUser.username }}
+            </p>
+            <p class="text-sm text-gray-500 truncate">{{ currentUser.email }}</p>
+          </div>
+
+          <a
+            routerLink="/profile"
+            class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer"
+          >
+            Thông tin cá nhân
+          </a>
+          <a
+            routerLink="/my-posts"
+            class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer"
+          >
+            Tin đăng của tôi
+          </a>
+          <a
+            routerLink="/saved"
+            class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer"
+          >
+            Tin đã lưu
+          </a>
+
+          <div class="border-t border-gray-200 mt-2 pt-2">
+            <button
+              (click)="logout()"
+              class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 cursor-pointer"
+            >
+              Đăng xuất
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Hamburger mobile -->
-    <button 
-      (click)="toggleMenu()" 
-      class="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer">
+    <button
+      (click)="toggleMenu()"
+      class="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+    >
       <svg *ngIf="!isOpen" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M4 6h16M4 12h16M4 18h16"
+        />
       </svg>
       <svg *ngIf="isOpen" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M6 18L18 6M6 6l12 12"
+        />
       </svg>
     </button>
   </nav>
@@ -53,32 +161,105 @@
   <!-- Mobile menu -->
   <div *ngIf="isOpen" class="lg:hidden bg-gray-50 border-t">
     <div class="px-4 py-6 space-y-4">
-      <a routerLink="/" (click)="toggleMenu()" class="block py-2 font-medium text-gray-700 hover:text-[#00C897] cursor-pointer">
+      <!-- User info on mobile (if logged in) -->
+      <div *ngIf="currentUser" class="flex items-center space-x-3 pb-4 border-b border-gray-200">
+        <img
+          *ngIf="currentUser.avatar_url"
+          [src]="currentUser.avatar_url"
+          [alt]="currentUser.full_name"
+          class="w-12 h-12 rounded-full object-cover border-2 border-[#00C897]"
+        />
+        <div
+          *ngIf="!currentUser.avatar_url"
+          class="w-12 h-12 rounded-full bg-[#00C897] flex items-center justify-center text-white font-bold text-lg"
+        >
+          {{ getInitials(currentUser.full_name || currentUser.username) }}
+        </div>
+        <div>
+          <p class="font-medium text-gray-900">
+            {{ currentUser.full_name || currentUser.username }}
+          </p>
+          <p class="text-sm text-gray-500">{{ currentUser.email }}</p>
+        </div>
+      </div>
+
+      <a
+        routerLink="/"
+        (click)="toggleMenu()"
+        class="block py-2 font-medium text-gray-700 hover:text-[#00C897] cursor-pointer"
+      >
         Trang chủ
       </a>
-      <a routerLink="/search" (click)="toggleMenu()" class="block py-2 font-medium text-gray-700 hover:text-[#00C897] cursor-pointer">
+      <a
+        routerLink="/search"
+        (click)="toggleMenu()"
+        class="block py-2 font-medium text-gray-700 hover:text-[#00C897] cursor-pointer"
+      >
         Tìm phòng
       </a>
-      <a routerLink="/blog" (click)="toggleMenu()" class="block py-2 font-medium text-gray-700 hover:text-[#00C897] cursor-pointer">
+      <a
+        routerLink="/blog"
+        (click)="toggleMenu()"
+        class="block py-2 font-medium text-gray-700 hover:text-[#00C897] cursor-pointer"
+      >
         Blog
       </a>
-      <button class="w-full bg-[#FF6B6B] text-white px-6 py-3 rounded-lg font-bold hover:bg-[#FF5E3A] transition-colors cursor-pointer">
+      <button
+        class="w-full bg-[#FF6B6B] text-white px-6 py-3 rounded-lg font-bold hover:bg-[#FF5E3A] transition-colors cursor-pointer"
+      >
         Đăng tin miễn phí
       </button>
 
       <div class="border-t pt-4">
-        <button 
+        <!-- Show login button if not logged in -->
+        <button
+          *ngIf="!currentUser"
           (click)="openLoginModal(); toggleMenu()"
-          class="w-full border-2 border-[#00C897] text-[#00C897] px-6 py-3 rounded-lg font-bold hover:bg-[#00C897]/10 transition-colors cursor-pointer pointer-events-auto z-50 relative">
+          class="w-full border-2 border-[#00C897] text-[#00C897] px-6 py-3 rounded-lg font-bold hover:bg-[#00C897]/10 transition-colors cursor-pointer"
+        >
           Đăng nhập
         </button>
+
+        <!-- Show user menu if logged in -->
+        <div *ngIf="currentUser" class="space-y-2">
+          <a
+            routerLink="/profile"
+            (click)="toggleMenu()"
+            class="block py-2 font-medium text-gray-700 hover:text-[#00C897] cursor-pointer"
+          >
+            Thông tin cá nhân
+          </a>
+          <a
+            routerLink="/my-posts"
+            (click)="toggleMenu()"
+            class="block py-2 font-medium text-gray-700 hover:text-[#00C897] cursor-pointer"
+          >
+            Tin đăng của tôi
+          </a>
+          <a
+            routerLink="/saved"
+            (click)="toggleMenu()"
+            class="block py-2 font-medium text-gray-700 hover:text-[#00C897] cursor-pointer"
+          >
+            Tin đã lưu
+          </a>
+          <button
+            (click)="logout(); toggleMenu()"
+            class="w-full text-left py-2 font-medium text-red-600 hover:text-red-700 cursor-pointer"
+          >
+            Đăng xuất
+          </button>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Modal đăng nhập – đặt ở đây để nó là phần của header -->
-  <app-login-modal 
+  <!-- Modal đăng nhập -->
+  <app-login-modal
+    *ngIf="isLoginModalOpen"
     [isLoginOpen]="isLoginModalOpen"
-    (close)="closeLoginModal()">
+    (close)="closeLoginModal()"
+    (loginSuccess)="onLoginSuccess()"
+  >
   </app-login-modal>
 </header>

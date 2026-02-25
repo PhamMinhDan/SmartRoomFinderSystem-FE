@@ -1,24 +1,119 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  Output,
+  OnInit,
+  NgZone,
+  Inject,
+  PLATFORM_ID,
+} from '@angular/core';
+import { isPlatformBrowser, CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { AuthService } from '../../services/auth.service';
+import { Router } from '@angular/router';
+
+declare var google: any;
 
 @Component({
   selector: 'app-login-modal',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './login-modal.component.html',
-  styleUrls: ['./login-modal.component.css']
+  styleUrls: ['./login-modal.component.css'],
 })
-export class LoginModalComponent {
-  @Input() isLoginOpen = false;          // Input để binding từ header
-  @Output() close = new EventEmitter<void>();  // Output để emit sự kiện đóng
+export class LoginModalComponent implements OnInit {
+  @Input() isLoginOpen = false;
+  @Output() close = new EventEmitter<void>();
+  @Output() loginSuccess = new EventEmitter<void>();
 
-  // Các hàm được gọi từ template HTML
+  email = '';
+  password = '';
+  isLoading = false;
+  errorMessage = '';
+  private isBrowser: boolean;
+
+  constructor(
+    private authService: AuthService,
+    private router: Router,
+    private ngZone: NgZone,
+    @Inject(PLATFORM_ID) platformId: Object,
+  ) {
+    this.isBrowser = isPlatformBrowser(platformId);
+  }
+
+  ngOnInit(): void {
+    if (this.isBrowser) {
+      this.initializeGoogleSignIn();
+    }
+  }
+
+  initializeGoogleSignIn(): void {
+    if (typeof google === 'undefined') return;
+
+    google.accounts.id.initialize({
+      client_id: '1027464859821-utavveetoebms99epjqat60kpjlsv62q.apps.googleusercontent.com',
+      callback: this.handleGoogleSignIn.bind(this),
+      use_fedcm_for_prompt: false,
+    });
+  }
+
+  loginWithGoogle(): void {
+    if (!this.isBrowser || typeof google === 'undefined') return;
+
+    this.errorMessage = '';
+    google.accounts.id.prompt((notification: any) => {
+      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+        this.errorMessage = 'Không thể mở đăng nhập Google';
+      }
+    });
+  }
+
+  handleGoogleSignIn(response: any): void {
+    this.ngZone.run(() => {
+      this.isLoading = true;
+      this.errorMessage = '';
+
+      const idToken = response.credential;
+
+      this.authService.loginWithGoogle(idToken).subscribe({
+        next: () => {
+          this.isLoading = false;
+          this.loginSuccess.emit();
+          this.closeModal();
+          this.router.navigate(['/']);
+        },
+        error: () => {
+          this.isLoading = false;
+          this.errorMessage = 'Đăng nhập thất bại. Vui lòng thử lại.';
+        },
+      });
+    });
+  }
+
+  onEmailLogin(): void {
+    if (!this.email || !this.password) {
+      this.errorMessage = 'Vui lòng nhập email và mật khẩu';
+      return;
+    }
+
+    this.isLoading = true;
+    this.errorMessage = '';
+
+    setTimeout(() => {
+      this.errorMessage = 'Chức năng đăng nhập bằng email chưa được triển khai';
+      this.isLoading = false;
+    }, 1000);
+  }
+
   closeModal(): void {
-    console.log('[LoginModal] Đóng modal được gọi');
-    this.close.emit();  // Emit ra cho HeaderComponent nhận
+    this.email = '';
+    this.password = '';
+    this.errorMessage = '';
+    this.close.emit();
   }
 
   stopPropagation(event: MouseEvent): void {
-    event.stopPropagation();  // Ngăn click lan ra backdrop
+    event.stopPropagation();
   }
 }
