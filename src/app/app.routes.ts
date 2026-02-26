@@ -2,26 +2,27 @@ import { Routes } from '@angular/router';
 import { HomePageComponent } from './pages/home-page/home-page.component';
 import { SearchPageComponent } from './pages/search-page/search-page.component';
 import { BlogPageComponent } from './pages/blog-page/blog-page.component';
+import { ProfileComponent } from './pages/profile/profile.component';
 
-
-export const routes:  Routes = [
-  { 
-    path: '', 
+export const routes: Routes = [
+  {
+    path: '',
     component: HomePageComponent,
-    title: 'RoomFinder. vn - Tìm phòng trọ nhanh chóng, dễ dàng'
+    title: 'RoomFinder. vn - Tìm phòng trọ nhanh chóng, dễ dàng',
   },
-  { 
-    path: 'search', 
+  {
+    path: 'search',
     component: SearchPageComponent,
-    title: 'Tìm phòng - RoomFinder.vn'
+    title: 'Tìm phòng - RoomFinder.vn',
   },
-  { 
-    path: 'blog', 
+  {
+    path: 'blog',
     component: BlogPageComponent,
-    title: 'Blog - RoomFinder.vn'
+    title: 'Blog - RoomFinder.vn',
   },
-  { 
-    path:  '**', 
-    redirectTo:  '' 
-  }
+  { path: 'profile', component: ProfileComponent, title: 'Thông tin cá nhân - RoomFinder.vn' },
+  {
+    path: '**',
+    redirectTo: '',
+  },
 ];

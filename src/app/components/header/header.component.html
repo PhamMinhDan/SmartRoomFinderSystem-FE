@@ -88,17 +88,18 @@
         <!-- Dropdown menu -->
         <div
           *ngIf="isUserMenuOpen"
-          class="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
+          class="absolute right-0 mt-2 w-67 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
         >
           <div class="px-4 py-3 border-b border-gray-200">
             <p class="text-sm font-medium text-gray-900">
               {{ currentUser.full_name || currentUser.username }}
             </p>
-            <p class="text-sm text-gray-500 truncate">{{ currentUser.email }}</p>
+            <p class="text-sm text-gray-500 whitespace-nowrap">{{ currentUser.email }}</p>
           </div>
 
           <a
             routerLink="/profile"
+            (click)="onProfileClick($event)"
             class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer"
           >
             Thông tin cá nhân
@@ -218,7 +219,7 @@
         <div *ngIf="currentUser" class="space-y-2">
           <a
             routerLink="/profile"
-            (click)="toggleMenu()"
+            (click)="onProfileClick($event)"
             class="block py-2 font-medium text-gray-700 hover:text-[#00C897] cursor-pointer"
           >
             Thông tin cá nhân

@@ -55,7 +55,7 @@ export class LoginModalComponent implements OnInit {
     google.accounts.id.initialize({
       client_id: environment.googleClientId,
       callback: this.handleGoogleSignIn.bind(this),
-      use_fedcm_for_prompt: false,
+      auto_select: false,
     });
   }
 

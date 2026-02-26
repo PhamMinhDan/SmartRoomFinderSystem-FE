@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy, ElementRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { LoginModalComponent } from '../login-modal/login-modal.component';
 import { AuthService, UserResponse } from '../../services/auth.service';
 import { Subscription } from 'rxjs';
@@ -23,6 +23,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   constructor(
     private authService: AuthService,
     private eRef: ElementRef,
+    private router: Router,
   ) {}
 
   @HostListener('document:click', ['$event'])
@@ -35,7 +36,6 @@ export class HeaderComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.userSubscription = this.authService.currentUser.subscribe((user) => {
       this.currentUser = user;
-      console.log('Current user updated:', user);
     });
 
     if (this.authService.isLoggedIn() && !this.currentUser) {
@@ -62,17 +62,14 @@ export class HeaderComponent implements OnInit, OnDestroy {
   }
 
   openLoginModal(): void {
-    console.log('[Header] Nút Đăng nhập được click → mở modal');
     this.isLoginModalOpen = true;
   }
 
   closeLoginModal(): void {
-    console.log('[Header] Đóng modal từ output');
     this.isLoginModalOpen = false;
   }
 
   onLoginSuccess(): void {
-    console.log('[Header] Login successful');
     this.isLoginModalOpen = false;
   }
 
@@ -81,15 +78,21 @@ export class HeaderComponent implements OnInit, OnDestroy {
     this.isUserMenuOpen = !this.isUserMenuOpen;
   }
 
+  onProfileClick(event: Event): void {
+    event.stopPropagation();
+    this.isUserMenuOpen = false;
+  }
+
   logout(): void {
     if (confirm('Bạn có chắc muốn đăng xuất?')) {
       this.authService.logout().subscribe({
         next: () => {
           console.log('Logout successful');
           this.isUserMenuOpen = false;
+          this.router.navigate(['/']);
         },
-        error: (error) => {
-          console.error('Logout error:', error);
+        error: () => {
+          this.router.navigate(['/']);
         },
       });
     }
