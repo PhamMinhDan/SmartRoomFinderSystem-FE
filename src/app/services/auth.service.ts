@@ -4,14 +4,28 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 
+export interface AddressResponse {
+  address_id: number;
+  street_address: string;
+  city_name: string;
+  district_name: string;
+  ward_name: string;
+  latitude: number;
+  longitude: number;
+  is_primary: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface UserResponse {
   user_id: string;
   username: string;
   email: string;
-  full_name: string;
+  full_name: string | null;
   avatar_url: string;
   phone_number?: string;
   bio?: string;
+  address: AddressResponse | null;
   identity_verified: boolean;
   role_name: string;
   is_active: boolean;
@@ -38,7 +52,7 @@ export interface ApiResponse<T> {
   providedIn: 'root',
 })
 export class AuthService {
-  private apiUrl = 'http://localhost:8080/api'; // Thay đổi URL này theo backend của bạn
+  private apiUrl = 'http://localhost:8080/api';
   private currentUserSubject: BehaviorSubject<UserResponse | null>;
   public currentUser: Observable<UserResponse | null>;
   private isBrowser: boolean;
@@ -118,20 +132,34 @@ export class AuthService {
     );
   }
 
-  logout(): Observable<ApiResponse<string>> {
+  logout(): Observable<ApiResponse<string> | null> {
     const token = this.getItem('accessToken');
+
+    if (!token) {
+      this.clearSession();
+      return new Observable((observer) => {
+        observer.next(null);
+        observer.complete();
+      });
+    }
+
     const headers = new HttpHeaders({
       Authorization: `Bearer ${token}`,
     });
 
     return this.http.post<ApiResponse<string>>(`${this.apiUrl}/auth/logout`, {}, { headers }).pipe(
-      tap(() => {
-        this.removeItem('accessToken');
-        this.removeItem('refreshToken');
-        this.removeItem('currentUser');
-        this.currentUserSubject.next(null);
+      tap({
+        next: () => this.clearSession(),
+        error: () => this.clearSession(),
       }),
     );
+  }
+
+  private clearSession(): void {
+    this.removeItem('accessToken');
+    this.removeItem('refreshToken');
+    this.removeItem('currentUser');
+    this.currentUserSubject.next(null);
   }
 
   isLoggedIn(): boolean {
