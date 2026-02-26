@@ -13,6 +13,7 @@ import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
+import { ToastService } from '../toast/toast.service';
 
 declare var google: any;
 
@@ -28,8 +29,7 @@ export class LoginModalComponent implements OnInit {
   @Output() close = new EventEmitter<void>();
   @Output() loginSuccess = new EventEmitter<void>();
 
-  email = '';
-  password = '';
+  phone = '';
   isLoading = false;
   errorMessage = '';
   private isBrowser: boolean;
@@ -38,6 +38,7 @@ export class LoginModalComponent implements OnInit {
     private authService: AuthService,
     private router: Router,
     private ngZone: NgZone,
+    private toast: ToastService,
     @Inject(PLATFORM_ID) platformId: Object,
   ) {
     this.isBrowser = isPlatformBrowser(platformId);
@@ -84,29 +85,25 @@ export class LoginModalComponent implements OnInit {
     client.requestAccessToken();
   }
 
-  onEmailLogin(): void {
-    if (!this.email || !this.password) {
-      this.errorMessage = 'Vui lòng nhập email và mật khẩu';
-      return;
-    }
-
-    this.isLoading = true;
-    this.errorMessage = '';
-
-    setTimeout(() => {
-      this.errorMessage = 'Chức năng đăng nhập bằng email chưa được triển khai';
-      this.isLoading = false;
-    }, 1000);
-  }
-
   closeModal(): void {
-    this.email = '';
-    this.password = '';
+    this.phone = '';
     this.errorMessage = '';
     this.close.emit();
   }
 
   stopPropagation(event: MouseEvent): void {
     event.stopPropagation();
+  }
+  onPhoneLogin(): void {
+    if (!this.phone) {
+      this.toast.show('Vui lòng nhập số điện thoại', 'error');
+      return;
+    }
+
+    this.toast.show('Chức năng đăng nhập bằng số điện thoại đang phát triển', 'info');
+  }
+
+  handleFacebookLogin(): void {
+    this.toast.show('Chức năng đăng nhập Facebook đang phát triển', 'info');
   }
 }
