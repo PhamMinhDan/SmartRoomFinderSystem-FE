@@ -257,4 +257,11 @@
     (loginSuccess)="onLoginSuccess()"
   >
   </app-login-modal>
+
+  <!-- Modal xác nhận đăng xuất -->
+  <app-confirm-logout-modal
+    *ngIf="isConfirmLogoutOpen"
+    (confirm)="confirmLogout()"
+    (cancel)="isConfirmLogoutOpen = false"
+  ></app-confirm-logout-modal>
 </header>
