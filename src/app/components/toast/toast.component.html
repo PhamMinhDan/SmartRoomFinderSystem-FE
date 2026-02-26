@@ -1,0 +1,83 @@
+<div
+  *ngIf="state?.visible"
+  class="fixed top-6 right-6 z-[9999] flex items-start gap-3 px-4 py-3 rounded-2xl shadow-xl border bg-white animate-slide"
+  [ngClass]="{
+    'border-green-200': state.type === 'success',
+    'border-red-200': state.type === 'error',
+    'border-blue-200': state.type === 'info',
+    'border-yellow-200': state.type === 'warning',
+  }"
+>
+  <!-- Icon -->
+  <div>
+    <ng-container [ngSwitch]="state.type">
+      <!-- SUCCESS -->
+      <svg
+        *ngSwitchCase="'success'"
+        xmlns="http://www.w3.org/2000/svg"
+        class="w-5 h-5 text-green-500"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+      </svg>
+
+      <!-- ERROR -->
+      <svg
+        *ngSwitchCase="'error'"
+        xmlns="http://www.w3.org/2000/svg"
+        class="w-5 h-5 text-red-500"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+
+      <!-- WARNING -->
+      <svg
+        *ngSwitchCase="'warning'"
+        xmlns="http://www.w3.org/2000/svg"
+        class="w-5 h-5 text-yellow-500"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M12 9v2m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z"
+        />
+      </svg>
+
+      <!-- INFO -->
+      <svg
+        *ngSwitchDefault
+        xmlns="http://www.w3.org/2000/svg"
+        class="w-5 h-5 text-blue-500"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M13 16h-1v-4h-1m1-4h.01M12 20h.01M12 2a10 10 0 100 20 10 10 0 000-20z"
+        />
+      </svg>
+    </ng-container>
+  </div>
+
+  <!-- Message -->
+  <div class="text-sm font-medium text-gray-800">
+    {{ state.message }}
+  </div>
+
+  <!-- Close -->
+  <button class="ml-2 text-gray-400 hover:text-gray-600" (click)="close()">✕</button>
+</div>
