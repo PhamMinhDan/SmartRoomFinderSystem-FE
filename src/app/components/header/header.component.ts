@@ -3,12 +3,14 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { LoginModalComponent } from '../login-modal/login-modal.component';
 import { AuthService, UserResponse } from '../../services/auth.service';
+import { ConfirmLogoutModalComponent } from '../logout/confirm-logout-modal.component';
+
 import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule, RouterModule, LoginModalComponent],
+  imports: [CommonModule, RouterModule, LoginModalComponent, ConfirmLogoutModalComponent],
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.css'],
 })
@@ -17,6 +19,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   isLoginModalOpen = false;
   currentUser: UserResponse | null = null;
   isUserMenuOpen = false;
+  isConfirmLogoutOpen = false;
 
   private userSubscription?: Subscription;
 
@@ -84,18 +87,21 @@ export class HeaderComponent implements OnInit, OnDestroy {
   }
 
   logout(): void {
-    if (confirm('Bạn có chắc muốn đăng xuất?')) {
-      this.authService.logout().subscribe({
-        next: () => {
-          console.log('Logout successful');
-          this.isUserMenuOpen = false;
-          this.router.navigate(['/']);
-        },
-        error: () => {
-          this.router.navigate(['/']);
-        },
-      });
-    }
+    this.isConfirmLogoutOpen = true;
+  }
+
+  confirmLogout(): void {
+    this.authService.logout().subscribe({
+      next: () => {
+        this.isConfirmLogoutOpen = false;
+        this.isUserMenuOpen = false;
+        this.router.navigate(['/']);
+      },
+      error: () => {
+        this.isConfirmLogoutOpen = false;
+        this.router.navigate(['/']);
+      },
+    });
   }
 
   getInitials(name: string): string {

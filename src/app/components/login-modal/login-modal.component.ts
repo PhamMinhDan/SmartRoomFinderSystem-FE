@@ -43,53 +43,45 @@ export class LoginModalComponent implements OnInit {
     this.isBrowser = isPlatformBrowser(platformId);
   }
 
-  ngOnInit(): void {
-    if (this.isBrowser) {
-      this.initializeGoogleSignIn();
-    }
-  }
-
-  initializeGoogleSignIn(): void {
-    if (typeof google === 'undefined') return;
-
-    google.accounts.id.initialize({
-      client_id: environment.googleClientId,
-      callback: this.handleGoogleSignIn.bind(this),
-      auto_select: false,
-    });
-  }
+  ngOnInit(): void {}
 
   loginWithGoogle(): void {
     if (!this.isBrowser || typeof google === 'undefined') return;
 
     this.errorMessage = '';
-    google.accounts.id.prompt((notification: any) => {
-      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-        this.errorMessage = 'Không thể mở đăng nhập Google';
-      }
+
+    const client = google.accounts.oauth2.initTokenClient({
+      client_id: environment.googleClientId,
+      scope: 'openid profile email',
+      callback: (tokenResponse: any) => {
+        if (tokenResponse.error) {
+          this.ngZone.run(() => {
+            this.errorMessage = 'Đăng nhập Google thất bại. Vui lòng thử lại.';
+          });
+          return;
+        }
+
+        if (tokenResponse.access_token) {
+          this.ngZone.run(() => {
+            this.isLoading = true;
+            this.authService.loginWithGoogle(tokenResponse.access_token).subscribe({
+              next: () => {
+                this.isLoading = false;
+                this.loginSuccess.emit();
+                this.closeModal();
+                this.router.navigate(['/']);
+              },
+              error: () => {
+                this.isLoading = false;
+                this.errorMessage = 'Đăng nhập thất bại. Vui lòng thử lại.';
+              },
+            });
+          });
+        }
+      },
     });
-  }
 
-  handleGoogleSignIn(response: any): void {
-    this.ngZone.run(() => {
-      this.isLoading = true;
-      this.errorMessage = '';
-
-      const idToken = response.credential;
-
-      this.authService.loginWithGoogle(idToken).subscribe({
-        next: () => {
-          this.isLoading = false;
-          this.loginSuccess.emit();
-          this.closeModal();
-          this.router.navigate(['/']);
-        },
-        error: () => {
-          this.isLoading = false;
-          this.errorMessage = 'Đăng nhập thất bại. Vui lòng thử lại.';
-        },
-      });
-    });
+    client.requestAccessToken();
   }
 
   onEmailLogin(): void {
