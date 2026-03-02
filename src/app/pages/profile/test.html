@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Chọn địa chỉ phòng</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css"
+    />
+
+    <style>
+      body {
+        font-family: Arial;
+        margin: 20px;
+      }
+
+      .container {
+        max-width: 800px;
+        margin: auto;
+      }
+
+      #map {
+        height: 350px;
+        margin-top: 10px;
+        border-radius: 10px;
+      }
+
+      label {
+        font-weight: bold;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <h2>📍 Địa chỉ phòng trọ</h2>
+
+      <label>Nhập địa chỉ:</label>
+      <div id="search"></div>
+
+      <div id="map"></div>
+
+      <p><b>Địa chỉ đã chọn:</b></p>
+      <div id="result">Chưa chọn</div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+
+    <script>
+      const map = L.map('map').setView([21.0285, 105.8523], 13);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+      let marker;
+
+      // ===== SEARCH ADDRESS =====
+      const geocoder = L.Control.geocoder({
+        placeholder: 'Nhập địa chỉ phòng...',
+        defaultMarkGeocode: false,
+      }).addTo(map);
+
+      // Khi user chọn địa chỉ
+      geocoder.on('markgeocode', function (e) {
+        const latlng = e.geocode.center;
+        const address = e.geocode.name;
+
+        map.setView(latlng, 17);
+
+        if (marker) map.removeLayer(marker);
+
+        marker = L.marker(latlng, { draggable: true }).addTo(map);
+
+        updateAddress(latlng.lat, latlng.lng, address);
+
+        // cho phép kéo chỉnh
+        marker.on('dragend', async function (ev) {
+          const pos = ev.target.getLatLng();
+
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.lat}&lon=${pos.lng}`,
+          );
+
+          const data = await res.json();
+
+          updateAddress(pos.lat, pos.lng, data.display_name);
+        });
+      });
+
+      function updateAddress(lat, lng, address) {
+        document.getElementById('result').innerHTML = `
+        📌 ${address}<br>
+        🌍 Lat: ${lat.toFixed(6)}<br>
+        🌍 Lng: ${lng.toFixed(6)}
+    `;
+
+        console.log({
+          latitude: lat,
+          longitude: lng,
+          address: address,
+        });
+      }
+    </script>
+  </body>
+</html>

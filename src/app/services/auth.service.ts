@@ -3,6 +3,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
 
 export interface AddressResponse {
   address_id: number;
@@ -52,7 +53,7 @@ export interface ApiResponse<T> {
   providedIn: 'root',
 })
 export class AuthService {
-  private apiUrl = 'http://localhost:8080/api';
+  private readonly baseUrl = `${environment.apiUrl}`;
   private currentUserSubject: BehaviorSubject<UserResponse | null>;
   public currentUser: Observable<UserResponse | null>;
   private isBrowser: boolean;
@@ -103,7 +104,7 @@ export class AuthService {
     });
 
     return this.http
-      .post<ApiResponse<AuthGoogleResponse>>(`${this.apiUrl}/auth/google-login`, {}, { headers })
+      .post<ApiResponse<AuthGoogleResponse>>(`${this.baseUrl}/auth/google-login`, {}, { headers })
       .pipe(
         tap((response) => {
           if (response.success && response.data) {
@@ -117,12 +118,7 @@ export class AuthService {
   }
 
   getCurrentUser(): Observable<ApiResponse<UserResponse>> {
-    const token = this.getItem('accessToken');
-    const headers = new HttpHeaders({
-      Authorization: `Bearer ${token}`,
-    });
-
-    return this.http.get<ApiResponse<UserResponse>>(`${this.apiUrl}/user/me`, { headers }).pipe(
+    return this.http.get<ApiResponse<UserResponse>>(`${this.baseUrl}/user/me`).pipe(
       tap((response) => {
         if (response.success && response.data) {
           this.setItem('currentUser', JSON.stringify(response.data));
@@ -147,7 +143,7 @@ export class AuthService {
       Authorization: `Bearer ${token}`,
     });
 
-    return this.http.post<ApiResponse<string>>(`${this.apiUrl}/auth/logout`, {}, { headers }).pipe(
+    return this.http.post<ApiResponse<string>>(`${this.baseUrl}/auth/logout`, {}, { headers }).pipe(
       tap({
         next: () => this.clearSession(),
         error: () => this.clearSession(),
@@ -164,5 +160,61 @@ export class AuthService {
 
   isLoggedIn(): boolean {
     return !!this.getItem('accessToken');
+  }
+
+  getRefreshToken(): string | null {
+    return this.getItem('refreshToken');
+  }
+
+  clearSessionLocal(): void {
+    this.removeItem('accessToken');
+    this.removeItem('refreshToken');
+    this.removeItem('currentUser');
+    this.currentUserSubject.next(null);
+  }
+
+  refreshToken(): Observable<any> {
+    const refreshToken = this.getItem('refreshToken');
+
+    return this.http.post(`${this.baseUrl}/auth/refresh-token`, {
+      refreshToken: refreshToken,
+    });
+  }
+
+  getAccessToken(): string | null {
+    return this.getItem('accessToken');
+  }
+
+  setTokens(accessToken: string, refreshToken: string) {
+    this.setItem('accessToken', accessToken);
+    this.setItem('refreshToken', refreshToken);
+  }
+
+  tryRefreshOnStart(): Promise<void> {
+    const refreshToken = this.getRefreshToken();
+
+    if (!refreshToken) {
+      return Promise.resolve();
+    }
+
+    return new Promise((resolve) => {
+      this.refreshToken().subscribe({
+        next: (res: any) => {
+          if (res?.accessToken) {
+            this.setTokens(res.accessToken, res.refreshToken ?? refreshToken);
+            this.getCurrentUser().subscribe({
+              next: () => resolve(),
+              error: () => resolve(),
+            });
+          } else {
+            resolve();
+          }
+        },
+        error: () => {
+          this.clearSessionLocal();
+          resolve();
+        },
+      });
+    });
   }
 }

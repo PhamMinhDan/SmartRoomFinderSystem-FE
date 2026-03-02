@@ -4,9 +4,12 @@
     <a routerLink="/" class="flex items-center space-x-2 cursor-pointer">
       <img src="/assets/logo_srf_removebg.png" alt="Home" class="object-contain logo_header" />
       <!-- Ẩn trên desktop khi đã login -->
-      <span class="text-2xl font-bold text-gray-900" [ngClass]="{ 'lg:hidden': currentUser }"
-        >RoomFinder.vn</span
+      <span
+        class="text-xl lg:text-[22px] font-bold text-gray-900"
+        [ngClass]="{ 'lg:hidden': currentUser }"
       >
+        RoomFinder.vn
+      </span>
     </a>
 
     <!-- Menu desktop -->

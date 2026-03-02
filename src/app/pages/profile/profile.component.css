@@ -159,6 +159,111 @@
   }
 }
 
+/* ── Address Form Modal ─────────────────────────────────────────────── */
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.animate-slide-up {
+  animation: slide-up 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Modal header gradient */
+.address-modal-header {
+  background: linear-gradient(135deg, #00c897 0%, #00a87f 100%);
+}
+
+/* Form label */
+.form-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+
+/* Form input */
+.form-input {
+  padding: 10px 14px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  color: #334155;
+  background: #f8fafc;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s,
+    background 0.15s;
+  outline: none;
+}
+.form-input:focus {
+  border-color: #00c897;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(0, 200, 151, 0.12);
+}
+.form-input::placeholder {
+  color: #94a3b8;
+}
+.form-input-error {
+  border-color: #f43f5e !important;
+  background: #fff5f5 !important;
+  box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.1) !important;
+}
+
+.form-error {
+  font-size: 0.7rem;
+  color: #f43f5e;
+  margin-top: 3px;
+  display: block;
+}
+
+.address-info-note {
+  background: #eff6ff;
+  color: #3b82f6;
+  border: 1px solid #bfdbfe;
+}
+.address-info-note strong {
+  color: #1d4ed8;
+}
+
+.geocode-preview {
+  background: #f0fdf4;
+  border: 1px dashed #86efac;
+}
+
+.submit-btn {
+  background: linear-gradient(135deg, #00c897 0%, #00a87f 100%);
+  box-shadow: 0 4px 14px rgba(0, 200, 151, 0.3);
+}
+.submit-btn:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(0, 200, 151, 0.4);
+}
+.submit-btn:active {
+  transform: translateY(0);
+}
+
+.add-address-btn {
+  background: linear-gradient(135deg, #00c897 0%, #00a87f 100%);
+  color: white;
+  box-shadow: 0 2px 10px rgba(0, 200, 151, 0.25);
+}
+.add-address-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0, 200, 151, 0.35);
+}
+
 @media (max-width: 640px) {
   .hero-banner {
     height: 120px;
