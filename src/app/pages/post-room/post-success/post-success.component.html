@@ -1,0 +1,91 @@
+<div class="min-h-screen flex items-center justify-center bg-slate-50 p-6">
+  <div class="bg-white rounded-3xl shadow-xl p-10 max-w-lg w-full border border-slate-100">
+    <!-- Success icon -->
+    <div class="text-center mb-8">
+      <div
+        class="w-18 h-18 mx-auto rounded-full bg-emerald-50 border-4 border-emerald-100 flex items-center justify-center w-20 h-20 mb-4"
+      >
+        <svg class="w-9 h-9 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2.5"
+            d="M5 13l4 4L19 7"
+          />
+        </svg>
+      </div>
+      <h2 class="text-xl font-bold text-slate-800 leading-snug">
+        Chúc mừng! Tin đăng của bạn sẽ được<br />phê duyệt trong ít phút.
+      </h2>
+    </div>
+
+    <!-- Room preview card -->
+    <div class="border-2 border-slate-100 rounded-2xl p-5 flex items-center gap-4 mb-6">
+      <div
+        class="w-20 h-20 bg-slate-100 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden"
+      >
+        <img
+          *ngIf="room && room.images && room.images[0]?.imageUrl"
+          [src]="room.images[0].imageUrl"
+          class="w-full h-full object-cover"
+        />
+        <svg
+          *ngIf="!room || !room.images || !room.images[0]?.imageUrl"
+          class="w-8 h-8 text-slate-300"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="1.5"
+            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+          />
+        </svg>
+      </div>
+      <div>
+        <h3 class="font-bold text-slate-800 mb-1">{{ room?.title || 'Tiêu đề' }}</h3>
+        <p class="text-red-500 font-semibold text-sm">
+          {{
+            room && room.pricePerMonth ? (room.pricePerMonth | number) + ' đ/tháng' : 'Giá phòng'
+          }}
+        </p>
+      </div>
+    </div>
+
+    <!-- Stats grid -->
+    <div class="grid grid-cols-3 text-center text-sm mb-8 bg-slate-50 rounded-2xl p-4 gap-2">
+      <div>
+        <p class="text-xs text-slate-400 mb-1">Hạng tin đăng</p>
+        <p class="font-bold text-amber-600">{{ room?.postTier || 'VIP' }}</p>
+      </div>
+      <div class="border-x border-slate-200">
+        <p class="text-xs text-slate-400 mb-1">Số ngày đăng tin</p>
+        <p class="font-bold text-slate-800">{{ room?.durationDays || 60 }} ngày</p>
+      </div>
+      <div>
+        <p class="text-xs text-slate-400 mb-1">Hiển thị đến</p>
+        <p class="font-bold text-slate-800">
+          {{ room && room.expiredAt ? (room.expiredAt | date: 'dd/MM/yyyy') : '--/--/----' }}
+        </p>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex gap-3">
+      <button
+        (click)="goManage()"
+        class="flex-1 bg-slate-800 hover:bg-slate-700 text-white py-3 rounded-xl font-semibold transition-colors shadow-sm"
+      >
+        Quản lí tin
+      </button>
+      <button
+        routerLink="/"
+        class="flex-1 border-2 border-slate-200 hover:border-slate-300 text-slate-700 py-3 rounded-xl font-semibold transition-colors"
+      >
+        Về trang chủ
+      </button>
+    </div>
+  </div>
+</div>

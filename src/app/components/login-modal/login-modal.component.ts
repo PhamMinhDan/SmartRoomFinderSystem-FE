@@ -68,9 +68,14 @@ export class LoginModalComponent implements OnInit {
             this.authService.loginWithGoogle(tokenResponse.access_token).subscribe({
               next: () => {
                 this.isLoading = false;
+
+                const user = this.authService.currentUserValue;
+                const redirect = user?.role_name === 'ADMIN' ? '/admin' : '/';
+
                 this.loginSuccess.emit();
                 this.closeModal();
-                this.router.navigate(['/']);
+
+                this.router.navigate([redirect]);
               },
               error: () => {
                 this.isLoading = false;

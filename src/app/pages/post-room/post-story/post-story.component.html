@@ -1,0 +1,556 @@
+<!-- post-room.component.html -->
+<div class="post-page min-h-screen bg-[#f5f5f5] mt-8">
+  <!-- ── Top bar ─────────────────────────────────────────────── -->
+  <div
+    class="post-topbar bg-white border-b border-slate-100 px-6 py-4 flex items-center justify-center gap-30 sticky top-0 z-10"
+  >
+    <span class="text-slate-800 font-bold text-base tracking-tight"> Đăng tin </span>
+
+    <div class="stepper flex items-center gap-3 text-xs">
+      <div class="flex items-center gap-2">
+        <div class="step-num done">1</div>
+        <span class="text-slate-400 font-medium">Xác thực danh tính</span>
+      </div>
+
+      <div class="step-line"></div>
+
+      <div class="flex items-center gap-2">
+        <div class="step-num active">2</div>
+        <span class="font-bold text-slate-800">Thông tin phòng trọ</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Form ────────────────────────────────────────────────── -->
+  <div class="max-w-2xl mx-auto px-4 py-8 space-y-5" [formGroup]="roomForm">
+    <!-- ── Section 1: Location ──────────────────────────────── -->
+    <div class="post-card rounded-2xl bg-white shadow-sm overflow-hidden">
+      <div class="card-header px-6 py-4 border-b border-slate-100 flex items-center gap-2">
+        <svg
+          class="w-4 h-4 text-[#00c897]"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"
+          />
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"
+          />
+        </svg>
+        <h2 class="text-sm font-bold text-slate-700">Vị trí trọ</h2>
+      </div>
+
+      <div class="px-6 py-5 space-y-4">
+        <!-- Address row from location modal -->
+        <div class="field-group">
+          <label class="field-label">Địa chỉ <span class="text-rose-500">*</span></label>
+          <div class="address-display flex items-center gap-2" (click)="openLocationModal()">
+            <svg
+              class="w-4 h-4 text-slate-400 shrink-0"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"
+              />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"
+              />
+            </svg>
+            <span [class.placeholder]="!fullAddress">{{ fullAddress || 'Địa chỉ*' }}</span>
+            <svg
+              class="w-4 h-4 text-slate-400 ml-auto"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+            </svg>
+          </div>
+          <span *ngIf="submitted && !fullAddress" class="field-error">Vui lòng chọn địa chỉ</span>
+        </div>
+
+        <!-- Map preview (show after address selected) -->
+        <div
+          *ngIf="fullAddress"
+          id="postRoomMap"
+          class="map-preview rounded-xl border border-slate-200"
+        ></div>
+      </div>
+    </div>
+
+    <!-- ── Section 2: Images ─────────────────────────────────── -->
+    <div class="post-card rounded-2xl bg-white shadow-sm overflow-hidden">
+      <div class="card-header px-6 py-4 border-b border-slate-100 flex items-center gap-2">
+        <svg
+          class="w-4 h-4 text-[#00c897]"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5z"
+          />
+        </svg>
+        <h2 class="text-sm font-bold text-slate-700">Nội dung tin đăng</h2>
+      </div>
+
+      <div class="px-6 py-5 space-y-4">
+        <!-- Image upload area -->
+        <div
+          class="image-upload-area"
+          (click)="triggerImageInput()"
+          (dragover)="$event.preventDefault()"
+          (drop)="onImageDrop($event)"
+        >
+          <input
+            #imageInput
+            type="file"
+            accept="image/*,video/*"
+            multiple
+            class="hidden"
+            (change)="onImagesSelect($event)"
+          />
+
+          <!-- Preview grid -->
+          <div *ngIf="imagePreviews.length > 0" class="image-preview-grid">
+            <div *ngFor="let img of imagePreviews; let i = index" class="preview-item">
+              <img [src]="img" class="preview-img" />
+              <button class="remove-img" (click)="removeImage(i, $event)">
+                <svg
+                  class="w-3 h-3"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  viewBox="0 0 24 24"
+                >
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div class="add-more-box">
+              <svg
+                class="w-6 h-6 text-slate-400"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                viewBox="0 0 24 24"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+            </div>
+          </div>
+
+          <!-- Empty state -->
+          <div
+            *ngIf="imagePreviews.length === 0"
+            class="upload-empty flex flex-col items-center gap-2"
+          >
+            <svg
+              class="w-10 h-10 text-slate-300"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M13.5 12h.008v.008H13.5V12zm-3 9h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5z"
+              />
+            </svg>
+            <span class="text-sm text-slate-400">Thêm ảnh / video</span>
+          </div>
+        </div>
+        <p *ngIf="submitted && imagePreviews.length === 0" class="field-error">
+          Vui lòng thêm ít nhất 1 ảnh
+        </p>
+        <p class="text-xs text-rose-400">Chất lượng ảnh tốt - chọn thêm ảnh các góc nét hơn!</p>
+
+        <!-- Title -->
+        <div class="field-group">
+          <input
+            type="text"
+            formControlName="title"
+            placeholder="Tiêu đề tin đăng *"
+            class="field-input"
+            [class.field-input-error]="
+              roomForm.get('title')?.invalid && roomForm.get('title')?.touched
+            "
+          />
+          <span
+            *ngIf="roomForm.get('title')?.invalid && roomForm.get('title')?.touched"
+            class="field-error"
+            >Vui lòng nhập tiêu đề</span
+          >
+        </div>
+
+        <!-- Price + Deposit row -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="field-group">
+            <div class="price-input-wrap">
+              <input
+                type="number"
+                formControlName="pricePerMonth"
+                placeholder="Giá thuê *"
+                class="field-input pr-8"
+                [class.field-input-error]="
+                  roomForm.get('pricePerMonth')?.invalid && roomForm.get('pricePerMonth')?.touched
+                "
+              />
+              <span class="currency-badge">đ</span>
+            </div>
+            <span
+              *ngIf="
+                roomForm.get('pricePerMonth')?.invalid && roomForm.get('pricePerMonth')?.touched
+              "
+              class="field-error"
+              >Vui lòng nhập giá thuê</span
+            >
+          </div>
+          <div class="field-group">
+            <div class="price-input-wrap">
+              <input
+                type="number"
+                formControlName="depositAmount"
+                placeholder="Số tiền cọc *"
+                class="field-input pr-8"
+              />
+              <span class="currency-badge">đ</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <textarea
+          formControlName="description"
+          rows="4"
+          placeholder="Mô tả&#10;Phòng rộng rãi, thoáng&#10;Không chung chủ, điện nước giá dân,..."
+          class="field-input resize-none"
+        ></textarea>
+      </div>
+    </div>
+
+    <!-- ── Section 3: Amenities ──────────────────────────────── -->
+    <div class="post-card rounded-2xl bg-white shadow-sm overflow-hidden">
+      <div class="card-header px-6 py-4 border-b border-slate-100 flex items-center gap-2">
+        <svg
+          class="w-4 h-4 text-[#00c897]"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+        <h2 class="text-sm font-bold text-slate-700">Đặc điểm và tiện ích</h2>
+      </div>
+
+      <div class="px-6 py-5 space-y-4">
+        <!-- Area + Status -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="field-group">
+            <input
+              type="number"
+              formControlName="areaSize"
+              placeholder="Diện tích *"
+              class="field-input"
+            />
+          </div>
+          <div class="field-group">
+            <select formControlName="furnishLevel" class="field-input field-select">
+              <option value="">Tình trạng</option>
+              <option value="unfurnished">Chưa nội thất</option>
+              <option value="semi-furnished">Nội thất cơ bản</option>
+              <option value="furnished">Đầy đủ nội thất</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Amenities checkboxes -->
+        <div class="amenities-grid">
+          <label
+            *ngFor="let amenity of amenities"
+            class="amenity-item"
+            [class.selected]="isAmenitySelected(amenity.amenityId)"
+          >
+            <input
+              type="checkbox"
+              [checked]="isAmenitySelected(amenity.amenityId)"
+              (change)="toggleAmenity(amenity.amenityId)"
+              class="hidden"
+            />
+            <div class="amenity-check"></div>
+            <span class="text-xs">{{ amenity.amenityName }}</span>
+          </label>
+        </div>
+
+        <!-- Add more amenities -->
+        <div class="custom-amenity-row" *ngIf="showCustomInput">
+          <input
+            type="text"
+            [(ngModel)]="customAmenityInput"
+            [ngModelOptions]="{ standalone: true }"
+            placeholder="Tên tiện ích..."
+            class="field-input flex-1"
+          />
+          <button (click)="addCustomAmenity()" class="add-btn">Thêm</button>
+        </div>
+
+        <div class="flex flex-wrap gap-2" *ngIf="customAmenities.length > 0">
+          <span *ngFor="let ca of customAmenities; let i = index" class="custom-tag">
+            {{ ca }}
+            <button (click)="removeCustomAmenity(i)" class="ml-1 opacity-60 hover:opacity-100">
+              ×
+            </button>
+          </span>
+        </div>
+
+        <button
+          (click)="showCustomInput = !showCustomInput"
+          class="add-amenity-btn text-xs font-semibold text-[#00876a]"
+        >
+          + Thêm tiện ích
+        </button>
+      </div>
+    </div>
+
+    <!-- Error -->
+    <div *ngIf="errorMsg" class="msg-error flex items-center gap-3 px-4 py-3 rounded-xl text-sm">
+      <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+        <path
+          fill-rule="evenodd"
+          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+          clip-rule="evenodd"
+        />
+      </svg>
+      {{ errorMsg }}
+    </div>
+
+    <!-- Submit -->
+    <div class="pb-6">
+      <button
+        (click)="submitRoom()"
+        [disabled]="submitLoading"
+        class="submit-btn w-full py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2"
+      >
+        <svg *ngIf="submitLoading" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+          <circle
+            class="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            stroke-width="4"
+          />
+          <path
+            class="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+          />
+        </svg>
+        {{ submitLoading ? 'Đang đăng...' : 'Đăng tin' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Location Modal ────────────────────────────────────────────── -->
+<div
+  *ngIf="showLocationModal"
+  class="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4"
+  style="background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(4px)"
+>
+  <div
+    class="location-modal w-full max-w-md bg-white rounded-3xl shadow-2xl animate-slide-up overflow-hidden"
+  >
+    <div class="flex items-center justify-between px-6 pt-6 pb-4">
+      <button
+        (click)="closeLocationModal()"
+        class="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition"
+      >
+        <svg
+          class="w-4 h-4"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+          viewBox="0 0 24 24"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+      <h3 class="text-base font-bold text-slate-800">Chọn địa chỉ</h3>
+      <div class="w-8"></div>
+    </div>
+
+    <div class="px-6 pb-6 space-y-4" [formGroup]="locationForm">
+      <!-- City -->
+      <div class="field-group relative">
+        <div
+          class="field-input cursor-pointer flex justify-between items-center select-none"
+          (click)="toggleLocDropdown('city')"
+        >
+          <span [class.text-slate-400]="!selectedCity">{{
+            selectedCity?.name || 'Tỉnh, thành phố *'
+          }}</span>
+          <svg
+            class="w-4 h-4 chevron"
+            [class.chevron-open]="openLocDropdown === 'city'"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            viewBox="0 0 24 24"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+        <div *ngIf="openLocDropdown === 'city'" class="loc-dropdown">
+          <div class="loc-search-wrap">
+            <input
+              type="text"
+              [(ngModel)]="citySearch"
+              [ngModelOptions]="{ standalone: true }"
+              placeholder="🔍 Tìm tỉnh..."
+              class="loc-search"
+            />
+          </div>
+          <div class="loc-list">
+            <div *ngFor="let c of filteredCities()" (click)="selectCity(c)" class="loc-option">
+              {{ c.name }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- District -->
+      <div class="field-group relative">
+        <div
+          class="field-input flex justify-between items-center select-none"
+          [class.cursor-pointer]="!!selectedCity"
+          [class.opacity-50]="!selectedCity"
+          (click)="selectedCity && toggleLocDropdown('district')"
+        >
+          <span [class.text-slate-400]="!selectedDistrict">{{
+            selectedDistrict?.name || 'Quận, huyện, thị xã *'
+          }}</span>
+          <svg
+            class="w-4 h-4 chevron"
+            [class.chevron-open]="openLocDropdown === 'district'"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            viewBox="0 0 24 24"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+        <div *ngIf="openLocDropdown === 'district'" class="loc-dropdown">
+          <div class="loc-search-wrap">
+            <input
+              type="text"
+              [(ngModel)]="districtSearch"
+              [ngModelOptions]="{ standalone: true }"
+              placeholder="🔍 Tìm quận/huyện..."
+              class="loc-search"
+            />
+          </div>
+          <div class="loc-list">
+            <div
+              *ngFor="let d of filteredDistricts()"
+              (click)="selectDistrict(d)"
+              class="loc-option"
+            >
+              {{ d.name }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ward -->
+      <div class="field-group relative">
+        <div
+          class="field-input flex justify-between items-center select-none"
+          [class.cursor-pointer]="!!selectedDistrict"
+          [class.opacity-50]="!selectedDistrict"
+          (click)="selectedDistrict && toggleLocDropdown('ward')"
+        >
+          <span [class.text-slate-400]="!selectedWard">{{
+            selectedWard?.name || 'Phường, xã, thị trấn *'
+          }}</span>
+          <svg
+            class="w-4 h-4 chevron"
+            [class.chevron-open]="openLocDropdown === 'ward'"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            viewBox="0 0 24 24"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+        <div *ngIf="openLocDropdown === 'ward'" class="loc-dropdown">
+          <div class="loc-search-wrap">
+            <input
+              type="text"
+              [(ngModel)]="wardSearch"
+              [ngModelOptions]="{ standalone: true }"
+              placeholder="🔍 Tìm phường/xã..."
+              class="loc-search"
+            />
+          </div>
+          <div class="loc-list">
+            <div *ngFor="let w of filteredWards()" (click)="selectWard(w)" class="loc-option">
+              {{ w.name }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Street name -->
+      <div class="field-group">
+        <input
+          type="text"
+          formControlName="streetName"
+          placeholder="Tên đường *"
+          class="field-input"
+          [class.field-input-error]="
+            locationForm.get('streetName')?.invalid && locationForm.get('streetName')?.touched
+          "
+        />
+      </div>
+
+      <!-- House number -->
+      <div class="field-group">
+        <input type="text" formControlName="houseNumber" placeholder="Số nhà" class="field-input" />
+      </div>
+
+      <button
+        (click)="confirmLocation()"
+        class="confirm-loc-btn w-full py-3.5 rounded-xl font-bold text-sm text-white"
+      >
+        Xong
+      </button>
+    </div>
+  </div>
+</div>

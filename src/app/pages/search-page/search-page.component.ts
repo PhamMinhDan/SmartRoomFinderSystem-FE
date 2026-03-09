@@ -1,173 +1,251 @@
 // search-page.component.ts
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Router } from '@angular/router';
+import { environment } from '../../../environments/environment';
 
-interface Listing {
-  id: number;
-  image: string;
-  price: string;
+interface RoomImage {
+  imageId: number;
+  imageUrl: string;
+  imageOrder: number;
+  isPrimary: boolean;
+}
+
+interface Room {
+  roomId: number;
   title: string;
-  location: string;
-  distance: string;
-  rating: number;
-  reviews: number;
-  tags: string[];
-  owner: string;
-  verified: boolean;
-  status: string;
-  area: number;
+  description: string;
+  address: string;
+  cityName: string;
+  districtName: string;
+  wardName: string;
+  areaSize: number;
+  pricePerMonth: number;
+  depositAmount: number;
+  capacity: number;
+  furnishLevel: string;
+  availabilityStatus: string;
+  isVerified: boolean;
+  isApproved: boolean;
+  isActive: boolean;
+  viewCount: number;
+  totalReviews: number;
+  landlordId: number;
+  landlordName: string;
+  landlordAvatar: string;
+  images: RoomImage[];
+  amenities: string[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 @Component({
   selector: 'app-search-page',
   standalone: true,
   imports: [CommonModule, FormsModule],
-  templateUrl: './search-page.component.html'
+  templateUrl: './search-page.component.html',
 })
-export class SearchPageComponent {
+export class SearchPageComponent implements OnInit {
+  // ── View ─────────────────────────────────────────
   view: 'grid' | 'list' = 'grid';
-  city = 'Hà Nội';
+
+  // ── Filters ──────────────────────────────────────
+  city = '';
   district = '';
-  priceMin = 2;
-  priceMax = 10;
-  areaMin = 10;
-  areaMax = 100;
+  priceMin: number | null = null;
+  priceMax: number | null = null;
+  areaMin: number | null = null;
+  areaMax: number | null = null;
   roomType = '';
   amenities: string[] = [];
+  sortOrder: 'newest' | 'price_asc' | 'price_desc' = 'newest';
+  minRating: number | null = null;
+  showAllAmenities = false;
 
+  // ── Pagination ────────────────────────────────────
+  currentPage = 0;
+  pageSize = 12;
+  totalPages = 0;
+  totalElements = 0;
+
+  // ── Data ─────────────────────────────────────────
+  rooms: Room[] = [];
+  loading = false;
+  hasSearched = false;
+
+  // ── Static options ────────────────────────────────
   districts: { [key: string]: string[] } = {
-    'Hà Nội': ['Cầu Giấy', 'Đống Đa', 'Thanh Xuân', 'Hoàng Mai', 'Long Biên', 'Ba Đình'],
-    'TP.HCM': ['Quận 1', 'Quận 7', 'Bình Thạnh', 'Tân Bình', 'Phú Nhuận', 'Gò Vấp'],
-    'Đà Nẵng': ['Hải Châu', 'Thanh Khê', 'Sơn Trà', 'Liên Chiểu', 'Ngũ Hành Sơn']
+    'Hà Nội': [
+      'Cầu Giấy',
+      'Đống Đa',
+      'Thanh Xuân',
+      'Hoàng Mai',
+      'Long Biên',
+      'Ba Đình',
+      'Hà Đông',
+      'Nam Từ Liêm',
+    ],
+    'TP. Hồ Chí Minh': ['Quận 1', 'Quận 7', 'Bình Thạnh', 'Tân Bình', 'Phú Nhuận', 'Gò Vấp'],
+    'Đà Nẵng': ['Hải Châu', 'Thanh Khê', 'Sơn Trà', 'Liên Chiểu', 'Ngũ Hành Sơn'],
   };
 
+  roomTypes = [
+    { value: '', label: 'Tất cả' },
+    { value: 'private', label: 'Phòng riêng' },
+    { value: 'shared', label: 'Phòng chung' },
+  ];
+
   amenitiesList = [
-    'Điều hòa', 'Nóng lạnh', 'Wifi miễn phí', 'Giờ tự do',
-    'Gác lửng', 'Ban công', 'Bếp riêng', 'Máy giặt', 'Camera an ninh'
+    'Wi-Fi',
+    'Điều hòa',
+    'Ban công',
+    'Bếp riêng',
+    'Gác lửng',
+    'Camera an ninh',
+    'Máy giặt',
+    'Nóng lạnh',
+    'Giờ tự do',
+    'Chỗ để xe',
   ];
 
-  listings: Listing[] = [
-    {
-      id: 1,
-      image: 'https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=800',
-      price: '3.5tr',
-      title: 'Phòng trọ 25m² full nội thất gần ĐH Kinh tế',
-      location: 'Cầu Giấy, Hà Nội',
-      distance: '2.5km tới trung tâm',
-      rating: 4.8,
-      reviews: 24,
-      tags: ['WiFi', 'Điều hòa', 'Gác lửng'],
-      owner: 'Anh Minh',
-      verified: true,
-      status: 'Còn trống',
-      area: 25
-    },
-    {
-      id: 2,
-      image: 'https://images.pexels.com/photos/1648776/pexels-photo-1648776.jpeg?auto=compress&cs=tinysrgb&w=800',
-      price: '5.2tr',
-      title: 'Căn hộ mini 35m² hiện đại, view đẹp',
-      location: 'Quận 7, TP.HCM',
-      distance: '1.8km tới trung tâm',
-      rating: 4.9,
-      reviews: 38,
-      tags: ['WiFi', 'Bếp riêng', 'Ban công'],
-      owner: 'Chị Lan',
-      verified: true,
-      status: 'Hot',
-      area: 35
-    },
-    {
-      id: 3,
-      image: 'https://images.pexels.com/photos/1918291/pexels-photo-1918291.jpeg?auto=compress&cs=tinysrgb&w=800',
-      price: '2.8tr',
-      title: 'Phòng trọ sinh viên sạch sẽ, an ninh',
-      location: 'Đống Đa, Hà Nội',
-      distance: '1.2km tới BX',
-      rating: 4.6,
-      reviews: 15,
-      tags: ['WiFi', 'Nóng lạnh', 'Giờ tự do'],
-      owner: 'Anh Tuấn',
-      verified: false,
-      status: 'Còn trống',
-      area: 20
-    },
-    {
-      id: 4,
-      image: 'https://images.pexels.com/photos/1457842/pexels-photo-1457842.jpeg?auto=compress&cs=tinysrgb&w=800',
-      price: '4.0tr',
-      title: 'Phòng có gác 30m², gần Metro, siêu thị',
-      location: 'Thanh Xuân, Hà Nội',
-      distance: '0.8km tới Metro',
-      rating: 4.7,
-      reviews: 29,
-      tags: ['WiFi', 'Điều hòa', 'Gác lửng'],
-      owner: 'Chị Hương',
-      verified: true,
-      status: 'Mới hôm nay',
-      area: 30
-    },
-    {
-      id: 5,
-      image: 'https://images.pexels.com/photos/1428348/pexels-photo-1428348.jpeg?auto=compress&cs=tinysrgb&w=800',
-      price: '6.5tr',
-      title: 'Studio 40m² full nội thất cao cấp',
-      location: 'Bình Thạnh, TP.HCM',
-      distance: '3.2km',
-      rating: 4.9,
-      reviews: 42,
-      tags: ['WiFi', 'Gym', 'Hồ bơi'],
-      owner: 'Anh Phát',
-      verified: true,
-      status: 'Hot',
-      area: 40
-    },
-    {
-      id: 6,
-      image: 'https://images.pexels.com/photos/1743229/pexels-photo-1743229.jpeg?auto=compress&cs=tinysrgb&w=800',
-      price: '3.2tr',
-      title: 'Phòng đẹp gần BX Mỹ Đình, giá tốt',
-      location: 'Nam Từ Liêm, Hà Nội',
-      distance: '2.1km tới BX',
-      rating: 4.5,
-      reviews: 18,
-      tags: ['WiFi', 'Nóng lạnh', 'An ninh'],
-      owner: 'Anh Hùng',
-      verified: true,
-      status: 'Còn trống',
-      area: 22
-    }
-  ];
+  get visibleAmenities(): string[] {
+    return this.showAllAmenities ? this.amenitiesList : this.amenitiesList.slice(0, 5);
+  }
 
-  toggleAmenity(amenity: string): void {
-    const index = this.amenities.indexOf(amenity);
-    if (index > -1) {
-      this.amenities.splice(index, 1);
-    } else {
-      this.amenities.push(amenity);
-    }
+  constructor(
+    private http: HttpClient,
+    private router: Router,
+  ) {}
+
+  ngOnInit() {
+    // Load tất cả phòng khi vào trang, không filter
+    this.fetchRooms(new HttpParams());
+  }
+
+  // ── Core fetch (dùng chung) ───────────────────────
+  private fetchRooms(filterParams: HttpParams) {
+    this.loading = true;
+    const params = filterParams
+      .set('page', this.currentPage.toString())
+      .set('size', this.pageSize.toString());
+
+    this.http.get<any>(`${environment.apiUrl}/rooms`, { params }).subscribe({
+      next: (res) => {
+        const page = res?.data;
+        this.rooms = page?.content ?? [];
+        this.totalElements = page?.totalElements ?? 0;
+        this.totalPages = page?.totalPages ?? 0;
+        this.hasSearched = true;
+        this.loading = false;
+      },
+      error: () => {
+        this.rooms = [];
+        this.totalElements = 0;
+        this.totalPages = 0;
+        this.hasSearched = true;
+        this.loading = false;
+      },
+    });
+  }
+
+  // ── Khi bấm "Áp dụng bộ lọc" ────────────────────
+  search(resetPage = true) {
+    if (resetPage) this.currentPage = 0;
+
+    let params = new HttpParams();
+    if (this.city) params = params.set('city', this.city);
+    if (this.district) params = params.set('district', this.district);
+    if (this.roomType) params = params.set('roomType', this.roomType);
+    if (this.priceMin != null)
+      params = params.set('priceMin', (this.priceMin * 1_000_000).toString());
+    if (this.priceMax != null)
+      params = params.set('priceMax', (this.priceMax * 1_000_000).toString());
+    if (this.areaMin != null) params = params.set('areaMin', this.areaMin.toString());
+    if (this.areaMax != null) params = params.set('areaMax', this.areaMax.toString());
+    if (this.amenities.length) params = params.set('amenities', this.amenities.join(','));
+    if (this.sortOrder) params = params.set('sort', this.sortOrder);
+    if (this.minRating != null) params = params.set('minRating', this.minRating.toString());
+
+    this.fetchRooms(params);
+  }
+
+  // ── Pagination ────────────────────────────────────
+  goToPage(page: number) {
+    if (page < 0 || page >= this.totalPages) return;
+    this.currentPage = page;
+    this.search(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  getPageRange(): number[] {
+    const maxVisible = 5;
+    const half = Math.floor(maxVisible / 2);
+    let start = Math.max(0, this.currentPage - half);
+    let end = Math.min(this.totalPages - 1, start + maxVisible - 1);
+    if (end - start < maxVisible - 1) start = Math.max(0, end - maxVisible + 1);
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+  }
+
+  // ── Navigation ────────────────────────────────────
+  viewRoom(id: number) {
+    this.router.navigate(['/room', id]);
+  }
+
+  contactRoom(id: number) {
+    this.router.navigate(['/chat'], { queryParams: { roomId: id } });
+  }
+
+  // ── Filter helpers ────────────────────────────────
+  onCityChange() {
+    this.district = '';
+  }
+
+  toggleAmenity(amenity: string) {
+    const i = this.amenities.indexOf(amenity);
+    if (i > -1) this.amenities.splice(i, 1);
+    else this.amenities.push(amenity);
   }
 
   isAmenitySelected(amenity: string): boolean {
     return this.amenities.includes(amenity);
   }
 
-  resetFilters(): void {
+  resetFilters() {
+    this.city = '';
     this.district = '';
-    this.priceMin = 2;
-    this.priceMax = 10;
-    this.areaMin = 10;
-    this.areaMax = 100;
+    this.priceMin = null;
+    this.priceMax = null;
+    this.areaMin = null;
+    this.areaMax = null;
     this.roomType = '';
     this.amenities = [];
+    this.sortOrder = 'newest';
+    this.minRating = null;
+    this.currentPage = 0;
+    this.fetchRooms(new HttpParams());
   }
 
   getDistricts(): string[] {
     return this.districts[this.city] || [];
   }
 
-  createRange(n: number): number[] {
-    return Array(n).fill(0).map((_, i) => i + 1);
+  // ── Display helpers ───────────────────────────────
+  formatPrice(price: number): string {
+    if (price >= 1_000_000) {
+      const m = price / 1_000_000;
+      return m % 1 === 0 ? `${m}tr` : `${m.toFixed(1)}tr`;
+    }
+    return `${(price / 1000).toFixed(0)}k`;
+  }
+
+  formatFurnish(level: string): string {
+    const map: { [key: string]: string } = {
+      'fully-furnished': 'Full nội thất',
+      'semi-furnished': 'Nội thất cơ bản',
+      unfurnished: 'Không nội thất',
+    };
+    return map[level] || level || 'Chưa cập nhật';
   }
 }

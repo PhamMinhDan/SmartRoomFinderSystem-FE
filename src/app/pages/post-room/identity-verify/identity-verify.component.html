@@ -1,0 +1,290 @@
+<!-- identity-verify.component.html -->
+<div class="verify-page min-h-screen bg-[#f5f5f5] mt-8">
+  <!-- ── Top nav bar ──────────────────────────────────────────── -->
+  <div
+    class="verify-topbar bg-white border-b border-slate-100 px-6 py-4 flex items-center justify-center gap-35"
+  >
+    <span class="text-slate-800 font-bold text-base tracking-tight"> Xác thực danh tính </span>
+
+    <div class="stepper flex items-center gap-3">
+      <div class="step-item flex items-center gap-2">
+        <div class="step-num" [class.active]="currentStep === 1" [class.done]="currentStep > 1">
+          1
+        </div>
+        <span class="step-label" [class.active-label]="currentStep === 1">
+          Xác thực danh tính
+        </span>
+      </div>
+
+      <div class="step-line"></div>
+
+      <div class="step-item flex items-center gap-2">
+        <div class="step-num" [class.active]="currentStep === 2">2</div>
+        <span class="step-label" [class.active-label]="currentStep === 2">
+          Thông tin phòng trọ
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Content ─────────────────────────────────────────────── -->
+  <div class="max-w-2xl mx-auto px-4 py-8 space-y-5">
+    <!-- Already verified notice -->
+    <div
+      *ngIf="alreadyVerified"
+      class="verified-notice flex items-center gap-3 px-5 py-4 rounded-2xl"
+    >
+      <svg class="w-5 h-5 text-emerald-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+        <path
+          fill-rule="evenodd"
+          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+          clip-rule="evenodd"
+        />
+      </svg>
+      <span class="text-sm font-medium text-emerald-700"
+        >Tài khoản đã được xác minh danh tính. Bạn có thể đăng tin ngay.</span
+      >
+    </div>
+
+    <!-- ── Step 1: Identity ──────────────────────────────────── -->
+    <div
+      *ngIf="!alreadyVerified"
+      class="verify-card rounded-2xl bg-white shadow-sm overflow-hidden"
+    >
+      <div class="card-header px-6 py-5 border-b border-slate-100">
+        <h2 class="text-sm font-bold text-slate-700 tracking-wide">Xác thực thông tin cá nhân</h2>
+      </div>
+
+      <div class="px-6 py-5 space-y-5" [formGroup]="verifyForm">
+        <!-- Phone -->
+        <div class="field-group">
+          <label class="field-label">SĐT <span class="text-rose-500">*</span></label>
+          <input
+            type="tel"
+            formControlName="phoneNumber"
+            placeholder="Nhập số điện thoại của bạn"
+            class="field-input"
+            [class.field-input-error]="
+              verifyForm.get('phoneNumber')?.invalid && verifyForm.get('phoneNumber')?.touched
+            "
+          />
+          <span
+            *ngIf="verifyForm.get('phoneNumber')?.invalid && verifyForm.get('phoneNumber')?.touched"
+            class="field-error"
+          >
+            Số điện thoại không hợp lệ
+          </span>
+        </div>
+
+        <!-- Document type -->
+        <div class="field-group">
+          <label class="field-label">Loại giấy tờ <span class="text-rose-500">*</span></label>
+          <div class="radio-group space-y-2.5 mt-1">
+            <label
+              class="radio-option"
+              [class.selected]="verifyForm.get('documentType')?.value === 'CCCD'"
+            >
+              <input type="radio" formControlName="documentType" value="CCCD" class="hidden" />
+              <div class="radio-dot"></div>
+              <span>Căn cước công dân / Chứng minh nhân dân</span>
+            </label>
+            <label
+              class="radio-option"
+              [class.selected]="verifyForm.get('documentType')?.value === 'PASSPORT'"
+            >
+              <input type="radio" formControlName="documentType" value="PASSPORT" class="hidden" />
+              <div class="radio-dot"></div>
+              <span>Hộ chiếu</span>
+            </label>
+            <label
+              class="radio-option"
+              [class.selected]="verifyForm.get('documentType')?.value === 'DRIVER_LICENSE'"
+            >
+              <input
+                type="radio"
+                formControlName="documentType"
+                value="DRIVER_LICENSE"
+                class="hidden"
+              />
+              <div class="radio-dot"></div>
+              <span>Bằng lái xe</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Upload images -->
+        <div class="grid grid-cols-2 gap-4">
+          <!-- Front -->
+          <div
+            class="upload-box"
+            (click)="triggerFileInput('front')"
+            [class.has-image]="frontPreview"
+          >
+            <input
+              #frontInput
+              type="file"
+              accept="image/*"
+              class="hidden"
+              (change)="onFileSelect($event, 'front')"
+            />
+            <img *ngIf="frontPreview" [src]="frontPreview" class="upload-preview" />
+            <div *ngIf="!frontPreview" class="upload-placeholder">
+              <svg
+                class="w-8 h-8 text-slate-400"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M13.5 12h.008v.008H13.5V12zm0 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zM3.75 3h16.5a.75.75 0 01.75.75v16.5a.75.75 0 01-.75.75H3.75A.75.75 0 013 20.25V3.75A.75.75 0 013.75 3z"
+                />
+              </svg>
+              <span class="text-xs text-slate-500 mt-2">Ảnh mặt trước</span>
+            </div>
+          </div>
+          <!-- Back -->
+          <div
+            class="upload-box"
+            (click)="triggerFileInput('back')"
+            [class.has-image]="backPreview"
+          >
+            <input
+              #backInput
+              type="file"
+              accept="image/*"
+              class="hidden"
+              (change)="onFileSelect($event, 'back')"
+            />
+            <img *ngIf="backPreview" [src]="backPreview" class="upload-preview" />
+            <div *ngIf="!backPreview" class="upload-placeholder">
+              <svg
+                class="w-8 h-8 text-slate-400"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M13.5 12h.008v.008H13.5V12zm0 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zM3.75 3h16.5a.75.75 0 01.75.75v16.5a.75.75 0 01-.75.75H3.75A.75.75 0 013 20.25V3.75A.75.75 0 013.75 3z"
+                />
+              </svg>
+              <span class="text-xs text-slate-500 mt-2">Ảnh mặt sau</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Upload tips -->
+        <div class="tips-box rounded-xl px-4 py-3">
+          <p class="text-xs font-semibold text-amber-700 mb-2">Hướng dẫn tải lên</p>
+          <ul class="space-y-1">
+            <li class="flex items-start gap-2 text-xs text-amber-700">
+              <span class="mt-0.5 shrink-0">•</span>
+              Đảm bảo nhìn thấy rõ 4 góc của giấy tờ
+            </li>
+            <li class="flex items-start gap-2 text-xs text-amber-700">
+              <span class="mt-0.5 shrink-0">•</span>
+              Tránh bị lóa hoặc phản chiếu trên bề mặt thẻ
+            </li>
+            <li class="flex items-start gap-2 text-xs text-amber-700">
+              <span class="mt-0.5 shrink-0">•</span>
+              Văn bản phải rõ ràng và dễ đọc
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Face verification card ────────────────────────────── -->
+    <div
+      *ngIf="!alreadyVerified"
+      class="verify-card rounded-2xl bg-white shadow-sm overflow-hidden"
+    >
+      <div class="card-header px-6 py-5 border-b border-slate-100">
+        <h2 class="text-sm font-bold text-slate-700 tracking-wide">Xác thực khuôn mặt</h2>
+      </div>
+
+      <div class="px-6 py-5">
+        <div class="flex gap-5">
+          <!-- Camera -->
+          <div class="camera-box relative rounded-xl overflow-hidden shrink-0">
+            <video *ngIf="cameraActive" #videoEl autoplay playsinline class="camera-video"></video>
+            <div
+              *ngIf="!cameraActive && !selfiePreview"
+              class="camera-placeholder flex flex-col items-center justify-center h-full gap-2"
+            >
+              <span class="text-white font-semibold text-sm">Camera</span>
+            </div>
+            <img *ngIf="selfiePreview" [src]="selfiePreview" class="w-full h-full object-cover" />
+            <button
+              *ngIf="cameraActive"
+              (click)="takeSelfie()"
+              class="camera-shutter absolute bottom-3 left-1/2 -translate-x-1/2"
+            >
+              <span class="shutter-inner"></span>
+            </button>
+            <button
+              *ngIf="!cameraActive && !selfiePreview"
+              (click)="startCamera()"
+              class="absolute inset-0 w-full h-full bg-transparent"
+            ></button>
+          </div>
+
+          <!-- Instructions -->
+          <div class="flex-1 space-y-3">
+            <div class="face-instruction" *ngFor="let inst of faceInstructions; let i = index">
+              <div class="inst-num">{{ i + 1 }}</div>
+              <span class="text-xs text-slate-600">{{ inst }}</span>
+            </div>
+            <p class="text-[11px] text-slate-400 leading-relaxed mt-3">
+              Thông tin sinh trắc học của bạn được mã hóa và chỉ được sử dụng cho mục đích xác minh
+              danh tính. Chúng tôi không lưu trữ dữ liệu khuôn mặt thô của bạn
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Error -->
+    <div *ngIf="errorMsg" class="msg-error flex items-center gap-3 px-4 py-3 rounded-xl">
+      <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+        <path
+          fill-rule="evenodd"
+          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+          clip-rule="evenodd"
+        />
+      </svg>
+      {{ errorMsg }}
+    </div>
+
+    <!-- Continue button -->
+    <div class="pb-4">
+      <button
+        (click)="proceedToStep2()"
+        [disabled]="submitLoading"
+        class="continue-btn w-full py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2"
+      >
+        <svg *ngIf="submitLoading" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+          <circle
+            class="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            stroke-width="4"
+          />
+          <path
+            class="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+          />
+        </svg>
+        {{ alreadyVerified ? 'Tiếp tục đăng tin' : submitLoading ? 'Đang xử lý...' : 'Tiếp tục' }}
+      </button>
+    </div>
+  </div>
+</div>

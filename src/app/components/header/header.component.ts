@@ -104,6 +104,20 @@ export class HeaderComponent implements OnInit, OnDestroy {
     });
   }
 
+  goToPostRoom(): void {
+    if (!this.currentUser) {
+      this.openLoginModal();
+      return;
+    }
+
+    if (this.currentUser.identity_verified) {
+      this.router.navigate(['/post-room']);
+      return;
+    }
+
+    this.router.navigate(['/identity-verify']);
+  }
+
   getInitials(name: string): string {
     if (!name) return 'U';
     const parts = name.split(' ');

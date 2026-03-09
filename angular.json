@@ -69,7 +69,8 @@
               "buildTarget": "SmartRoomFinderSystem-FE:build:production"
             },
             "development": {
-              "buildTarget": "SmartRoomFinderSystem-FE:build:development"
+              "buildTarget": "SmartRoomFinderSystem-FE:build:development",
+              "proxyConfig": "proxy.conf.json"
             }
           },
           "defaultConfiguration": "development"
