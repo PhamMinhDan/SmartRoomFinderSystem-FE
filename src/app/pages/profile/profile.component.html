@@ -298,7 +298,7 @@
             <span class="info-label">Thành phố</span>
             <span class="info-value">{{ display(address.city_name) }}</span>
           </div>
-          <div class="info-row">
+          <!-- <div class="info-row">
             <span class="info-label">Vĩ độ (Lat)</span>
             <span class="info-value font-mono text-xs text-slate-500">{{
               address.latitude ?? 'Chưa có'
@@ -309,7 +309,7 @@
             <span class="info-value font-mono text-xs text-slate-500">{{
               address.longitude ?? 'Chưa có'
             }}</span>
-          </div>
+          </div> -->
         </div>
 
         <!-- Empty address state -->
@@ -447,8 +447,8 @@
           />
         </svg>
         <span
-          >Nhập địa chỉ đầy đủ để hệ thống tự động lấy <strong>vĩ độ</strong> và
-          <strong>kinh độ</strong> chính xác thông qua OpenStreetMap Nominatim.</span
+          >Vui lòng nhập địa chỉ đầy đủ để hệ thống tự động lấy <strong>vĩ độ</strong> và
+          <strong>kinh độ</strong> chính xác.</span
         >
       </div>
 
@@ -465,7 +465,7 @@
             <path
               stroke-linecap="round"
               stroke-linejoin="round"
-              d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+              d="M2.25 12l8.954-8.955a1.126 1.126 0 011.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"
             />
           </svg>
           Số nhà / Tên đường <span class="text-rose-500">*</span>
@@ -488,82 +488,9 @@
         >
       </div>
 
-      <!-- Ward + District in a row -->
-      <div class="grid grid-cols-2 gap-4 mb-4">
-        <!-- Ward -->
-        <div class="form-group">
-          <label class="form-label">
-            <svg
-              class="w-3.5 h-3.5"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
-              />
-            </svg>
-            Phường / Xã <span class="text-rose-500">*</span>
-          </label>
-          <input
-            type="text"
-            formControlName="wardName"
-            placeholder="VD: Phường Bến Nghé"
-            class="form-input w-full"
-            [class.form-input-error]="
-              addressForm.get('wardName')?.invalid && addressForm.get('wardName')?.touched
-            "
-          />
-          <span
-            *ngIf="addressForm.get('wardName')?.invalid && addressForm.get('wardName')?.touched"
-            class="form-error"
-            >Bắt buộc</span
-          >
-        </div>
-
-        <!-- District -->
-        <div class="form-group">
-          <label class="form-label">
-            <svg
-              class="w-3.5 h-3.5"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-              />
-            </svg>
-            Quận / Huyện <span class="text-rose-500">*</span>
-          </label>
-          <input
-            type="text"
-            formControlName="districtName"
-            placeholder="VD: Quận 1"
-            class="form-input w-full"
-            [class.form-input-error]="
-              addressForm.get('districtName')?.invalid && addressForm.get('districtName')?.touched
-            "
-          />
-          <span
-            *ngIf="
-              addressForm.get('districtName')?.invalid && addressForm.get('districtName')?.touched
-            "
-            class="form-error"
-            >Bắt buộc</span
-          >
-        </div>
-      </div>
-
       <!-- City -->
-      <div class="form-group mb-5">
-        <label class="form-label">
+      <div class="form-group mb-5 relative">
+        <label class="form-label flex items-center gap-2">
           <svg
             class="w-3.5 h-3.5"
             fill="none"
@@ -574,25 +501,183 @@
             <path
               stroke-linecap="round"
               stroke-linejoin="round"
-              d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064"
+              d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"
+            />
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"
             />
           </svg>
           Thành phố / Tỉnh <span class="text-rose-500">*</span>
         </label>
-        <input
-          type="text"
-          formControlName="cityName"
-          placeholder="VD: Hồ Chí Minh"
-          class="form-input w-full"
-          [class.form-input-error]="
-            addressForm.get('cityName')?.invalid && addressForm.get('cityName')?.touched
-          "
-        />
-        <span
-          *ngIf="addressForm.get('cityName')?.invalid && addressForm.get('cityName')?.touched"
-          class="form-error"
-          >Vui lòng nhập thành phố</span
+
+        <!-- Input -->
+        <div
+          (click)="toggleCityDropdown()"
+          class="form-input w-full flex justify-between items-center cursor-pointer select-none"
         >
+          <span [class.text-slate-400]="!selectedCity?.name">{{
+            selectedCity?.name || 'Chọn tỉnh / thành'
+          }}</span>
+          <svg
+            class="w-4 h-4 chevron-icon"
+            [class.chevron-open]="showCityDropdown"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            viewBox="0 0 24 24"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+
+        <!-- Dropdown -->
+        <div *ngIf="showCityDropdown" class="dropdown-panel absolute z-50 w-full mt-1">
+          <div class="dropdown-search-wrapper">
+            <input
+              type="text"
+              [(ngModel)]="citySearch"
+              [ngModelOptions]="{ standalone: true }"
+              placeholder="🔍 Tìm tỉnh / thành..."
+              class="dropdown-search"
+            />
+          </div>
+          <div class="dropdown-list">
+            <div
+              *ngFor="let city of filteredCities()"
+              (click)="selectCity(city)"
+              class="dropdown-option"
+            >
+              {{ city.name }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ward + District in a row -->
+      <div class="grid grid-cols-2 gap-4 mb-4">
+        <!-- District -->
+        <div class="form-group relative">
+          <label class="form-label flex items-center gap-2">
+            <svg
+              class="w-3.5 h-3.5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21"
+              />
+            </svg>
+            Quận / Huyện <span class="text-rose-500">*</span>
+          </label>
+
+          <div
+            (click)="selectedCity && toggleDistrictDropdown()"
+            class="form-input w-full flex justify-between items-center cursor-pointer select-none"
+            [class.opacity-50]="!selectedCity"
+          >
+            <span [class.text-slate-400]="!selectedDistrict?.name">{{
+              selectedDistrict?.name || 'Chọn quận / huyện'
+            }}</span>
+            <svg
+              class="w-4 h-4 chevron-icon"
+              [class.chevron-open]="showDistrictDropdown"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              viewBox="0 0 24 24"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+
+          <div *ngIf="showDistrictDropdown" class="dropdown-panel absolute z-50 w-full mt-1">
+            <div class="dropdown-search-wrapper">
+              <input
+                type="text"
+                [(ngModel)]="districtSearch"
+                [ngModelOptions]="{ standalone: true }"
+                placeholder="🔍 Tìm quận / huyện..."
+                class="dropdown-search"
+              />
+            </div>
+            <div class="dropdown-list">
+              <div
+                *ngFor="let district of filteredDistricts()"
+                (click)="selectDistrict(district)"
+                class="dropdown-option"
+              >
+                {{ district.name }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ward -->
+        <div class="form-group relative">
+          <label class="form-label flex items-center gap-2">
+            <svg
+              class="w-3.5 h-3.5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M2.25 7.125C2.25 6.504 2.754 6 3.375 6h6c.621 0 1.125.504 1.125 1.125v3.75c0 .621-.504 1.125-1.125 1.125h-6a1.125 1.125 0 01-1.125-1.125v-3.75zM14.25 8.625c0-.621.504-1.125 1.125-1.125h5.25c.621 0 1.125.504 1.125 1.125v8.25c0 .621-.504 1.125-1.125 1.125h-5.25a1.125 1.125 0 01-1.125-1.125v-8.25zM3.75 16.125c0-.621.504-1.125 1.125-1.125h5.25c.621 0 1.125.504 1.125 1.125v2.25c0 .621-.504 1.125-1.125 1.125h-5.25a1.125 1.125 0 01-1.125-1.125v-2.25z"
+              />
+            </svg>
+            Phường / Xã <span class="text-rose-500">*</span>
+          </label>
+
+          <div
+            (click)="selectedDistrict && toggleWardDropdown()"
+            class="form-input w-full flex justify-between items-center cursor-pointer select-none"
+            [class.opacity-50]="!selectedDistrict"
+          >
+            <span [class.text-slate-400]="!selectedWard?.name">{{
+              selectedWard?.name || 'Chọn phường / xã'
+            }}</span>
+            <svg
+              class="w-4 h-4 chevron-icon"
+              [class.chevron-open]="showWardDropdown"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              viewBox="0 0 24 24"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+
+          <div *ngIf="showWardDropdown" class="dropdown-panel absolute z-50 w-full mt-1">
+            <div class="dropdown-search-wrapper">
+              <input
+                type="text"
+                [(ngModel)]="wardSearch"
+                [ngModelOptions]="{ standalone: true }"
+                placeholder="🔍 Tìm phường / xã..."
+                class="dropdown-search"
+              />
+            </div>
+            <div class="dropdown-list">
+              <div
+                *ngFor="let ward of filteredWards()"
+                (click)="selectWard(ward)"
+                class="dropdown-option"
+              >
+                {{ ward.name }}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Auto geocode note -->
@@ -612,10 +697,7 @@
       </div>
 
       <!-- Error / Success messages -->
-      <div
-        *ngIf="addressError"
-        class="flex items-center gap-2 px-4 py-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm mb-4"
-      >
+      <div *ngIf="addressError" class="msg-error mb-4">
         <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
           <path
             fill-rule="evenodd"
@@ -625,18 +707,22 @@
         </svg>
         {{ addressError }}
       </div>
-      <div
-        *ngIf="addressSuccess"
-        class="flex items-center gap-2 px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm mb-4"
-      >
-        <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-          <path
-            fill-rule="evenodd"
-            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-            clip-rule="evenodd"
-          />
-        </svg>
-        {{ addressSuccess }}
+
+      <!-- Success overlay -->
+      <div *ngIf="addressSuccess" class="success-overlay">
+        <div class="success-icon-ring">
+          <svg
+            class="w-8 h-8 text-white"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            viewBox="0 0 24 24"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+          </svg>
+        </div>
+        <p class="success-title">{{ addressSuccess }}</p>
+        <p class="success-sub">Đang đóng form...</p>
       </div>
 
       <!-- Action buttons -->
@@ -644,7 +730,7 @@
         <button
           type="button"
           (click)="closeAddressForm()"
-          class="flex-1 px-5 py-3 rounded-xl border border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-50 transition"
+          class="flex-1 px-5 py-3 rounded-xl border-2 border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-50 hover:border-slate-300 transition-all duration-200"
         >
           Hủy
         </button>

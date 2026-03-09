@@ -1,14 +1,29 @@
-import { Component, OnInit, AfterViewInit, Inject, PLATFORM_ID } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  AfterViewInit,
+  Inject,
+  PLATFORM_ID,
+  HostListener,
+  ElementRef,
+} from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
+import {
+  ReactiveFormsModule,
+  FormBuilder,
+  FormGroup,
+  Validators,
+  FormsModule,
+} from '@angular/forms';
 import { AuthService, UserResponse } from '../../services/auth.service';
 import { AddressService, AddressResponse } from '../../services/address.service';
 
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule],
+  imports: [CommonModule, RouterModule, ReactiveFormsModule, FormsModule],
   templateUrl: './profile.component.html',
   styleUrls: ['./profile.component.css'],
 })
@@ -30,16 +45,35 @@ export class ProfileComponent implements OnInit, AfterViewInit {
   private L: any;
   private redIcon: any;
 
+  cities: any[] = [];
+  districts: any[] = [];
+  wards: any[] = [];
+
+  selectedCity: any;
+  selectedDistrict: any;
+  selectedWard: any;
+
+  citySearch = '';
+  districtSearch = '';
+  wardSearch = '';
+
+  showCityDropdown = false;
+  showDistrictDropdown = false;
+  showWardDropdown = false;
+
   constructor(
     private authService: AuthService,
     private addressService: AddressService,
     private fb: FormBuilder,
     private router: Router,
+    private http: HttpClient,
+    private elementRef: ElementRef,
     @Inject(PLATFORM_ID) private platformId: Object,
   ) {}
 
   ngOnInit(): void {
     this.buildAddressForm();
+    this.loadCities();
 
     this.authService.currentUser.subscribe((user) => {
       this.user = user;
@@ -70,6 +104,115 @@ export class ProfileComponent implements OnInit, AfterViewInit {
     }
 
     this.loadAddress();
+  }
+
+  @HostListener('document:click', ['$event'])
+  clickOutside(event: MouseEvent) {
+    const clickedInside = this.elementRef.nativeElement.contains(event.target);
+
+    if (!clickedInside) {
+      this.showCityDropdown = false;
+      this.showDistrictDropdown = false;
+      this.showWardDropdown = false;
+    }
+  }
+
+  loadCities() {
+    this.http.get<any[]>('/province-api/api/v1/p/').subscribe((data) => {
+      this.cities = data;
+    });
+  }
+
+  loadDistricts(cityCode: number) {
+    this.http.get<any>(`/province-api/api/v1/p/${cityCode}?depth=2`).subscribe((data) => {
+      this.districts = data.districts;
+      this.wards = [];
+    });
+  }
+
+  loadWards(districtCode: number) {
+    this.http.get<any>(`/province-api/api/v1/d/${districtCode}?depth=2`).subscribe((data) => {
+      this.wards = data.wards;
+    });
+  }
+
+  toggleCityDropdown() {
+    this.showCityDropdown = !this.showCityDropdown;
+
+    this.showDistrictDropdown = false;
+    this.showWardDropdown = false;
+  }
+
+  toggleDistrictDropdown() {
+    if (!this.selectedCity) return;
+
+    this.showDistrictDropdown = !this.showDistrictDropdown;
+    this.showCityDropdown = false;
+    this.showWardDropdown = false;
+  }
+
+  toggleWardDropdown() {
+    if (!this.selectedDistrict) return;
+
+    this.showWardDropdown = !this.showWardDropdown;
+    this.showCityDropdown = false;
+    this.showDistrictDropdown = false;
+  }
+
+  selectCity(city: any) {
+    this.selectedCity = city;
+    this.selectedDistrict = null;
+    this.selectedWard = null;
+
+    this.showCityDropdown = false;
+
+    this.addressForm.patchValue({
+      cityName: city.name,
+      districtName: '',
+      wardName: '',
+    });
+
+    this.loadDistricts(city.code);
+  }
+
+  selectDistrict(district: any) {
+    this.selectedDistrict = district;
+    this.selectedWard = null;
+
+    this.showDistrictDropdown = false;
+
+    this.addressForm.patchValue({
+      districtName: district.name,
+      wardName: '',
+    });
+
+    this.loadWards(district.code);
+  }
+
+  selectWard(ward: any) {
+    this.selectedWard = ward;
+
+    this.showWardDropdown = false;
+
+    this.addressForm.patchValue({
+      wardName: ward.name,
+    });
+  }
+
+  filteredCities() {
+    return this.cities.filter((city) =>
+      city.name.toLowerCase().includes(this.citySearch.toLowerCase()),
+    );
+  }
+
+  filteredDistricts() {
+    return this.districts.filter((d) =>
+      d.name.toLowerCase().includes(this.districtSearch.toLowerCase()),
+    );
+  }
+
+  filteredWards() {
+    return this.wards.filter((w) => w.name.toLowerCase().includes(this.wardSearch.toLowerCase()));
   }
 
   async ngAfterViewInit(): Promise<void> {
@@ -137,6 +280,36 @@ export class ProfileComponent implements OnInit, AfterViewInit {
         districtName: this.address.district_name,
         wardName: this.address.ward_name,
       });
+
+      // Restore selected city
+      const city = this.cities.find((c) => c.name === this.address!.city_name);
+      if (city) {
+        this.selectedCity = city;
+        // Load districts then restore selected district & ward
+        this.http.get<any>(`/province-api/api/v1/p/${city.code}?depth=2`).subscribe((data) => {
+          this.districts = data.districts;
+          const district = this.districts.find((d) => d.name === this.address!.district_name);
+          if (district) {
+            this.selectedDistrict = district;
+            this.http
+              .get<any>(`/province-api/api/v1/d/${district.code}?depth=2`)
+              .subscribe((wardData) => {
+                this.wards = wardData.wards;
+                const ward = this.wards.find((w) => w.name === this.address!.ward_name);
+                if (ward) {
+                  this.selectedWard = ward;
+                }
+              });
+          }
+        });
+      }
+    } else {
+      // New address — reset selections
+      this.selectedCity = null;
+      this.selectedDistrict = null;
+      this.selectedWard = null;
+      this.districts = [];
+      this.wards = [];
     }
     this.showAddressForm = true;
   }
@@ -145,6 +318,19 @@ export class ProfileComponent implements OnInit, AfterViewInit {
     this.showAddressForm = false;
     this.addressError = '';
     this.addressSuccess = '';
+
+    this.addressForm.reset();
+
+    this.selectedCity = null;
+    this.selectedDistrict = null;
+    this.selectedWard = null;
+
+    this.citySearch = '';
+    this.districtSearch = '';
+    this.wardSearch = '';
+
+    this.districts = [];
+    this.wards = [];
   }
 
   submitAddress() {
@@ -168,9 +354,8 @@ export class ProfileComponent implements OnInit, AfterViewInit {
         this.authService.getCurrentUser().subscribe();
 
         setTimeout(() => {
-          this.showAddressForm = false;
-          this.addressSuccess = '';
-        }, 1500);
+          this.closeAddressForm();
+        }, 1000);
       },
       error: (err) => {
         this.addressLoading = false;
