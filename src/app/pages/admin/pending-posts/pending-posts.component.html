@@ -1,0 +1,127 @@
+<div class="page">
+
+  <div class="page-header">
+    <h1 class="page-title">Chờ duyệt</h1>
+    <p class="page-breadcrumb">RoomFinder Admin &rsaquo; Chờ duyệt</p>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs-wrap">
+    <button
+      class="tab-btn"
+      [class.active-all]="selectedTab() === 'all'"
+      (click)="selectedTab.set('all')"
+    >
+      Chờ duyệt ({{ posts.length }})
+    </button>
+    <button
+      class="tab-btn"
+      [class.active-warning]="selectedTab() === 'suspicious'"
+      (click)="selectedTab.set('suspicious')"
+    >
+      Nghi vấn spam ({{ suspiciousCount() }})
+    </button>
+    <button
+      class="tab-btn"
+      [class.active-danger]="selectedTab() === 'cheap'"
+      (click)="selectedTab.set('cheap')"
+    >
+      Giá rẻ bất thường ({{ cheapCount() }})
+    </button>
+  </div>
+
+  <!-- Bulk actions bar -->
+  @if (selectedPosts().length > 0) {
+    <div class="bulk-bar">
+      <span class="bulk-count">Đã chọn {{ selectedPosts().length }} tin</span>
+      <div class="bulk-actions">
+        <button class="btn-bulk-approve">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22,4 12,14.01 9,11.01"/>
+          </svg>
+          Phê duyệt chọn
+        </button>
+        <button class="btn-bulk-reject">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+            <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+          </svg>
+          Từ chối chọn
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- Select all + count -->
+  <div class="list-controls">
+    <button class="select-all-btn" (click)="selectAll()">
+      {{ isAllSelected() ? 'Bỏ chọn tất cả' : 'Chọn tất cả' }}
+    </button>
+    <span class="list-count">{{ filteredPosts().length }} tin đăng</span>
+  </div>
+
+  <!-- Cards Grid -->
+  <div class="posts-grid">
+    @for (post of filteredPosts(); track post.id) {
+      <div class="post-card" [class.selected]="isSelected(post.id)">
+
+        <div class="card-img-wrap">
+          <input
+            type="checkbox"
+            class="post-checkbox"
+            [checked]="isSelected(post.id)"
+            (change)="toggleSelect(post.id)"
+          />
+          <img [src]="post.image" [alt]="post.title" class="card-img" />
+          @if (post.suspicious) {
+            <div class="badge-spam">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              SPAM?
+            </div>
+          }
+        </div>
+
+        <div class="card-body">
+          <h3 class="card-title-text">{{ post.title }}</h3>
+          <p class="card-price">{{ post.price }}/tháng</p>
+          <div class="card-meta">
+            <p>📍 {{ post.address }}</p>
+            <p>📐 {{ post.area }}</p>
+          </div>
+
+          <div class="card-poster">
+            <div class="poster-avatar">{{ post.poster.avatar }}</div>
+            <div>
+              <p class="poster-name">{{ post.poster.name }}</p>
+              <p class="poster-time">{{ post.time }}</p>
+            </div>
+          </div>
+
+          <div class="card-actions">
+            <button class="btn-approve">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22,4 12,14.01 9,11.01"/>
+              </svg>
+              Duyệt
+            </button>
+            <button class="btn-reject">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+              </svg>
+              Từ chối
+            </button>
+            <button class="btn-view">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    }
+  </div>
+
+</div>
