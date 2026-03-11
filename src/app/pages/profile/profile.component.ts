@@ -408,9 +408,14 @@ export class ProfileComponent implements OnInit, AfterViewInit {
 
     this.map = this.L.map('profileMap').setView([lat, lng], 15);
 
-    this.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors',
-    }).addTo(this.map);
+    this.L.tileLayer(
+      'https://api.mapbox.com/styles/v1/mapbox/streets-v11/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoibHVvbmcyMyIsImEiOiJjbW1raDNueWcxZGJ3MnFwemg1aTI2cXF1In0.P4Zv9Up4zZaXXn7wG3ue4g',
+      {
+        attribution: '© Mapbox © OpenStreetMap',
+        tileSize: 512,
+        zoomOffset: -1,
+      },
+    ).addTo(this.map);
 
     this.marker = this.L.marker([lat, lng], { icon: this.redIcon })
       .addTo(this.map)
@@ -443,6 +448,7 @@ export class ProfileComponent implements OnInit, AfterViewInit {
           position.coords.longitude,
           'Vị trí hiện tại của bạn',
         );
+        console.log('Vị trí hiện tại:', position.coords.latitude, position.coords.longitude);
       },
       () => {
         console.log('User từ chối location');

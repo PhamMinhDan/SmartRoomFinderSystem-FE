@@ -126,4 +126,12 @@ export class HeaderComponent implements OnInit, OnDestroy {
     }
     return name[0].toUpperCase();
   }
+
+  goToChat(): void {
+    if (!this.currentUser) {
+      this.openLoginModal();
+      return;
+    }
+    this.router.navigate(['/chat']);
+  }
 }

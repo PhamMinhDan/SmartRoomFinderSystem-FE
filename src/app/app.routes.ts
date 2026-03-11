@@ -9,6 +9,8 @@ import { AdminGuard } from './pages/admin/admin.guard';
 import { AdminComponent } from './pages/admin/admin.component';
 import { PostSuccessComponent } from './pages/post-room/post-success/post-success.component';
 import { ManagePostsComponent } from './pages/manage-posts/manage-posts.component';
+import { ChatComponent } from './pages/chat/chat.component';
+import { RoomDetailComponent } from './pages/roomdetail/roomdetail.component';
 
 export const routes: Routes = [
   {
@@ -51,6 +53,16 @@ export const routes: Routes = [
     path: 'admin',
     component: AdminComponent,
     canActivate: [AdminGuard],
+  },
+  {
+    path: 'chat',
+    component: ChatComponent,
+    title: 'Chat - RoomFinder.vn',
+  },
+  {
+    path: 'room-detail/:id',
+    component: RoomDetailComponent,
+    title: 'Chi tiết phòng - RoomFinder.vn',
   },
   {
     path: '**',

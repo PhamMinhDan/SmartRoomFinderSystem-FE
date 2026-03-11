@@ -1,0 +1,271 @@
+<div class="flex flex-col bg-gray-100" style="height: calc(100vh - 64px)">
+  <div
+    class="flex flex-1 min-h-0 overflow-hidden mx-auto w-full max-w-7xl md:my-6 md:rounded-2xl md:shadow-xl md:overflow-hidden bg-white"
+  >
+    <!-- ─────────────── SIDEBAR ─────────────── -->
+    <!-- Mobile: chiếm full khi chưa chọn; Desktop: luôn hiện -->
+    <aside
+      class="flex flex-col bg-white border-r border-gray-100 overflow-hidden transition-all duration-300"
+      [class.w-full]="!selectedConv"
+      [class.hidden]="!!selectedConv"
+      [class.md:flex]="true"
+      [class.md:w-72]="true"
+      [class.md:block]="true"
+      style="flex-shrink: 0"
+    >
+      <!-- Header -->
+      <div
+        class="flex items-center justify-between px-5 py-4 border-b border-gray-100 flex-shrink-0 mobile-css"
+      >
+        <div class="flex items-center gap-2 font-bold text-gray-900 text-base">
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+          >
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+          Tin nhắn
+        </div>
+        <span
+          *ngIf="getTotalUnread() > 0"
+          class="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full"
+        >
+          {{ getTotalUnread() > 99 ? '99+' : getTotalUnread() }}
+        </span>
+      </div>
+
+      <!-- Empty -->
+      <div
+        *ngIf="conversations.length === 0"
+        class="flex-1 flex flex-col items-center justify-center text-gray-400 gap-3 p-8"
+      >
+        <span class="text-5xl">💬</span>
+        <p class="text-sm text-center">Chưa có cuộc trò chuyện nào</p>
+        <button (click)="goHome()" class="text-sm text-emerald-600 font-semibold hover:underline">
+          Tìm phòng ngay →
+        </button>
+      </div>
+
+      <!-- List -->
+      <div class="flex-1 overflow-y-auto overscroll-contain">
+        <div
+          *ngFor="let c of conversations; trackBy: trackByConv"
+          (click)="selectConversation(c)"
+          class="flex items-center gap-3 px-4 py-3 cursor-pointer border-r-[3px] transition-colors duration-150"
+          [class.bg-emerald-50]="selectedConv?.partnerId === c.partnerId"
+          [class.border-emerald-500]="selectedConv?.partnerId === c.partnerId"
+          [class.border-transparent]="selectedConv?.partnerId !== c.partnerId"
+          [class.hover:bg-gray-50]="selectedConv?.partnerId !== c.partnerId"
+        >
+          <!-- Avatar -->
+          <div class="relative flex-shrink-0">
+            <img
+              [src]="getAvatar(c)"
+              [alt]="c.partnerName"
+              class="w-12 h-12 rounded-full object-cover bg-gray-100"
+            />
+            <span
+              *ngIf="c.unreadCount > 0"
+              class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1 border-2 border-white leading-none"
+            >
+              {{ c.unreadCount > 9 ? '9+' : c.unreadCount }}
+            </span>
+          </div>
+
+          <!-- Info -->
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between mb-0.5">
+              <span
+                class="text-sm truncate"
+                [class.font-bold]="c.unreadCount > 0"
+                [class.text-gray-900]="c.unreadCount > 0"
+                [class.font-medium]="c.unreadCount === 0"
+                [class.text-gray-700]="c.unreadCount === 0"
+              >
+                {{ c.partnerName }}
+              </span>
+              <span
+                class="text-[11px] ml-2 flex-shrink-0"
+                [class.text-emerald-500]="c.unreadCount > 0"
+                [class.font-semibold]="c.unreadCount > 0"
+                [class.text-gray-400]="c.unreadCount === 0"
+              >
+                {{ formatTime(c.lastTime) }}
+              </span>
+            </div>
+            <p
+              class="text-xs truncate m-0"
+              [class.text-gray-800]="c.unreadCount > 0"
+              [class.font-semibold]="c.unreadCount > 0"
+              [class.text-gray-400]="c.unreadCount === 0"
+            >
+              {{ c.lastMessage || 'Bắt đầu cuộc trò chuyện' }}
+            </p>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ─────────────── CHAT MAIN ─────────────── -->
+    <!-- Mobile: hiện khi đã chọn conv; Desktop: luôn hiện -->
+    <main
+      class="flex-1 min-w-0 flex flex-col overflow-hidden bg-gray-50"
+      [class.hidden]="!selectedConv"
+      [class.flex]="!!selectedConv"
+      [class.md:flex]="true"
+    >
+      <!-- Empty state desktop -->
+      <div
+        *ngIf="!selectedConv"
+        class="hidden md:flex flex-1 flex-col items-center justify-center text-gray-400 gap-4"
+      >
+        <svg
+          width="64"
+          height="64"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#d1d5db"
+          stroke-width="1"
+        >
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+        </svg>
+        <p class="text-sm">Chọn một cuộc trò chuyện</p>
+      </div>
+
+      <!-- Header -->
+      <header
+        *ngIf="selectedConv"
+        class="flex items-center gap-3 px-4 py-3 bg-white border-b border-gray-100 flex-shrink-0 shadow-sm"
+      >
+        <!-- Nút quay lại (mobile only) -->
+        <button
+          (click)="backToList()"
+          class="md:hidden w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors text-gray-600 flex-shrink-0"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+          >
+            <polyline points="15,18 9,12 15,6" />
+          </svg>
+        </button>
+
+        <img
+          [src]="getAvatar(selectedConv)"
+          [alt]="selectedConv.partnerName"
+          class="w-9 h-9 rounded-full object-cover flex-shrink-0"
+        />
+
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-bold text-gray-900 truncate">{{ selectedConv.partnerName }}</div>
+          <div class="flex items-center gap-1.5 mt-0.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-green-400 flex-shrink-0"></span>
+            <span class="text-xs text-gray-500">Đang hoạt động</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Messages -->
+      <div
+        *ngIf="selectedConv"
+        #chatboxRef
+        class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden flex flex-col gap-1 px-4 py-5 md:px-6"
+      >
+        <!-- Loading -->
+        <div *ngIf="loading" class="flex flex-col gap-3">
+          <div class="skeleton-msg" style="width: 52%; align-self: flex-start"></div>
+          <div class="skeleton-msg" style="width: 40%; align-self: flex-end"></div>
+          <div class="skeleton-msg" style="width: 55%; align-self: flex-start"></div>
+          <div class="skeleton-msg" style="width: 38%; align-self: flex-end"></div>
+        </div>
+
+        <!-- No messages -->
+        <div
+          *ngIf="!loading && messages.length === 0"
+          class="flex-1 flex flex-col items-center justify-center text-gray-400 gap-2"
+        >
+          <span class="text-4xl">👋</span>
+          <p class="text-sm">Hãy bắt đầu cuộc trò chuyện!</p>
+        </div>
+
+        <!-- Bubbles -->
+        <ng-container *ngIf="!loading">
+          <div
+            *ngFor="let m of messages; trackBy: trackByMsg"
+            class="msg-row flex items-end gap-2 w-full"
+            [class.flex-row-reverse]="isMe(m)"
+          >
+            <img
+              *ngIf="!isMe(m)"
+              [src]="getAvatar(selectedConv)"
+              class="w-7 h-7 rounded-full object-cover flex-shrink-0 mb-1"
+            />
+
+            <div
+              class="flex flex-col max-w-[68%] min-w-0"
+              [class.items-end]="isMe(m)"
+              [class.items-start]="!isMe(m)"
+            >
+              <div
+                class="msg-bubble text-sm"
+                [class.bubble--me]="isMe(m)"
+                [class.bubble--them]="!isMe(m)"
+              >
+                {{ getMessageText(m) }}
+              </div>
+              <span class="text-[10px] text-gray-400 mt-1 px-1">
+                {{ formatMessageTime(m.createdAt || m.created_at || '') }}
+              </span>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+
+      <!-- Input -->
+      <footer
+        *ngIf="selectedConv"
+        class="flex items-center gap-2 px-3 py-3 bg-white border-t border-gray-100 flex-shrink-0"
+      >
+        <input
+          [(ngModel)]="messageText"
+          (keydown)="onKeyDown($event)"
+          placeholder="Nhập tin nhắn..."
+          autocomplete="off"
+          class="flex-1 min-w-0 px-4 py-2.5 bg-gray-100 rounded-2xl text-sm text-gray-900 outline-none placeholder-gray-400 focus:ring-2 focus:ring-emerald-400 focus:bg-white transition-all"
+        />
+
+        <button
+          (click)="send()"
+          [disabled]="!messageText.trim()"
+          class="w-10 h-10 flex items-center justify-center rounded-full transition-all duration-200 flex-shrink-0"
+          [class.bg-emerald-500]="messageText.trim()"
+          [class.text-white]="messageText.trim()"
+          [class.hover:bg-emerald-600]="!!messageText.trim()"
+          [class.bg-gray-200]="!messageText.trim()"
+          [class.text-gray-400]="!messageText.trim()"
+          [class.cursor-not-allowed]="!messageText.trim()"
+        >
+          <svg
+            width="17"
+            height="17"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+          >
+            <line x1="22" y1="2" x2="11" y2="13" />
+            <polygon points="22,2 15,22 11,13 2,9" />
+          </svg>
+        </button>
+      </footer>
+    </main>
+  </div>
+</div>
