@@ -1,0 +1,98 @@
+<div class="page">
+
+  <div class="page-header">
+    <h1 class="page-title">Tất cả tin</h1>
+    <p class="page-breadcrumb">RoomFinder Admin &rsaquo; Tất cả tin</p>
+  </div>
+
+  <!-- Search + Export -->
+  <div class="toolbar">
+    <div class="search-wrap">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input
+        type="text"
+        placeholder="Tìm kiếm theo tiêu đề, địa chỉ, người đăng..."
+        [value]="searchTerm()"
+        (input)="searchTerm.set($any($event.target).value)"
+        class="search-input"
+      />
+    </div>
+    <button class="export-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7,10 12,15 17,10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+      Xuất CSV
+    </button>
+  </div>
+
+  <!-- Table -->
+  <div class="table-card">
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Tin đăng</th>
+            <th>Giá</th>
+            <th>Địa chỉ</th>
+            <th>Người đăng</th>
+            <th>Trạng thái</th>
+            <th>Ngày đăng</th>
+            <th>Lượt xem</th>
+            <th>Hành động</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (post of filteredPosts(); track post.id) {
+            <tr>
+              <td>
+                <div class="post-cell">
+                  <img [src]="post.image" [alt]="post.title" class="post-thumb" />
+                  <span class="post-title-text">{{ post.title }}</span>
+                </div>
+              </td>
+              <td><span class="price-text">{{ post.price }}</span></td>
+              <td><span class="address-text">{{ post.address }}</span></td>
+              <td><span class="poster-text">{{ post.poster }}</span></td>
+              <td>
+                <span class="status-badge" [class]="'status-' + post.status">
+                  {{ getStatusLabel(post.status) }}
+                </span>
+              </td>
+              <td><span class="date-text">{{ post.date }}</span></td>
+              <td>
+                <div class="views-cell">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                  {{ post.views }}
+                </div>
+              </td>
+              <td>
+                <button class="detail-btn">Chi tiết</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="table-footer">
+      <span class="table-info">
+        Hiển thị 1-{{ filteredPosts().length }} trong tổng số {{ allPosts.length }} tin
+      </span>
+      <div class="pagination">
+        <button class="page-btn">Trước</button>
+        <button class="page-btn active">1</button>
+        <button class="page-btn">2</button>
+        <button class="page-btn">Sau</button>
+      </div>
+    </div>
+  </div>
+
+</div>

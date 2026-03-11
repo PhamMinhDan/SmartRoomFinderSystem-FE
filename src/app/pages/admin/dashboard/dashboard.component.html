@@ -1,0 +1,162 @@
+<div class="page">
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <h1 class="page-title">Dashboard Thống Kê</h1>
+    <p class="page-breadcrumb">RoomFinder Admin &rsaquo; Dashboard</p>
+  </div>
+
+  <!-- Stats Grid -->
+  <div class="stats-grid">
+    @for (stat of stats; track stat.label) {
+      <div class="stat-card">
+        <div class="stat-body">
+          <div class="stat-info">
+            <p class="stat-label">{{ stat.label }}</p>
+            <p class="stat-value">{{ stat.value }}</p>
+            <div class="stat-change">
+              @if (stat.trending === 'up') {
+                <span class="trend-up">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                    <polyline points="23,6 13.5,15.5 8.5,10.5 1,18"/>
+                    <polyline points="17,6 23,6 23,12"/>
+                  </svg>
+                  {{ stat.change }}
+                </span>
+              }
+              @if (stat.trending === 'down') {
+                <span class="trend-down">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                    <polyline points="23,18 13.5,8.5 8.5,13.5 1,6"/>
+                    <polyline points="17,18 23,18 23,12"/>
+                  </svg>
+                  {{ stat.change }}
+                </span>
+              }
+              @if (stat.trending === 'warning') {
+                <span class="trend-warning">{{ stat.change }} tin mới</span>
+              }
+            </div>
+          </div>
+          <div class="stat-icon-wrap" [class]="'icon-' + stat.colorClass">
+            <!-- List -->
+            @if (stat.icon === 'list') {
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+                <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
+                <line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/>
+                <line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+              </svg>
+            }
+            <!-- Clock -->
+            @if (stat.icon === 'clock') {
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+                <circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/>
+              </svg>
+            }
+            <!-- Check -->
+            @if (stat.icon === 'check') {
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22,4 12,14.01 9,11.01"/>
+              </svg>
+            }
+            <!-- Users -->
+            @if (stat.icon === 'users') {
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+            }
+            <!-- Eye -->
+            @if (stat.icon === 'eye') {
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            }
+            <!-- Dollar -->
+            @if (stat.icon === 'dollar') {
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+                <line x1="12" y1="1" x2="12" y2="23"/>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+              </svg>
+            }
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Charts Row -->
+  <div class="charts-row">
+
+    <!-- Bar Chart -->
+    <div class="card chart-card">
+      <h2 class="card-title">Thống kê tin đăng theo tuần</h2>
+      <div class="bar-chart">
+        @for (bar of chartBars; track $index) {
+          <div class="bar-col">
+            <div class="bar" [style.height.%]="bar"></div>
+            <span class="bar-label">{{ chartDays[$index] }}</span>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Top Districts -->
+    <div class="card districts-card">
+      <h2 class="card-title">Top Quận Hot</h2>
+      <div class="districts-list">
+        @for (district of topDistricts; track district.name) {
+          <div class="district-item">
+            <div class="district-header">
+              <span class="district-name">{{ district.name }}</span>
+              <span class="district-count">{{ district.posts }} tin</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" [style.width.%]="district.percent"></div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Posts -->
+  <div class="card">
+    <div class="section-header">
+      <h2 class="card-title">Tin mới chờ duyệt</h2>
+      <button class="link-btn">Xem tất cả &rarr;</button>
+    </div>
+
+    <div class="recent-grid">
+      @for (item of recentActivity; track item.id) {
+        <div class="recent-card">
+          <div class="recent-img-wrap">
+            <img [src]="item.image" [alt]="item.title" class="recent-img" />
+            <div class="badge-new">MỚI</div>
+          </div>
+          <div class="recent-body">
+            <h3 class="recent-title">{{ item.title }}</h3>
+            <p class="recent-price">{{ item.price }}/tháng</p>
+            <p class="recent-address">{{ item.address }}</p>
+            <div class="recent-footer">
+              <span class="recent-time">{{ item.time }}</span>
+              <div class="recent-actions">
+                <button class="btn-approve">Duyệt</button>
+                <button class="btn-reject">Từ chối</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="quick-actions">
+    <button class="btn-primary-lg">Duyệt nhanh chờ duyệt</button>
+    <button class="btn-danger-lg">Xem tất cả tin</button>
+  </div>
+
+</div>
