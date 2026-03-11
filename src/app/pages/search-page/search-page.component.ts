@@ -32,7 +32,7 @@ interface Room {
   isActive: boolean;
   viewCount: number;
   totalReviews: number;
-  landlordId: number;
+  landlordId: string;
   landlordName: string;
   landlordAvatar: string;
   images: RoomImage[];
@@ -190,11 +190,18 @@ export class SearchPageComponent implements OnInit {
 
   // ── Navigation ────────────────────────────────────
   viewRoom(id: number) {
-    this.router.navigate(['/room', id]);
+    this.router.navigate(['/room-detail', id]);
   }
 
-  contactRoom(id: number) {
-    this.router.navigate(['/chat'], { queryParams: { roomId: id } });
+  contactRoom(room: any) {
+    this.router.navigate(['/chat'], {
+      queryParams: {
+        roomId: room.roomId,
+        receiverId: room.landlordId,
+        partnerName: room.landlordName,
+        partnerAvatar: room.landlordAvatar,
+      },
+    });
   }
 
   // ── Filter helpers ────────────────────────────────

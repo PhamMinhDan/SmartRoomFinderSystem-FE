@@ -13,16 +13,26 @@
 
     <!-- Menu desktop -->
     <div class="hidden lg:flex items-center space-x-8">
-      <a routerLink="/" routerLinkActive="text-[#00C897]" [routerLinkActiveOptions]="{ exact: true }"
-        class="font-medium text-gray-700 hover:text-[#00C897] transition-colors cursor-pointer">
+      <a
+        routerLink="/"
+        routerLinkActive="active-link"
+        [routerLinkActiveOptions]="{ exact: true }"
+        class="nav-link font-medium text-gray-700 hover:text-[#00C897] transition-colors cursor-pointer"
+      >
         Trang chủ
       </a>
-      <a routerLink="/search" routerLinkActive="text-[#00C897]"
-        class="font-medium text-gray-700 hover:text-[#00C897] transition-colors cursor-pointer">
+      <a
+        routerLink="/search"
+        routerLinkActive="active-link"
+        class="nav-link font-medium text-gray-700 hover:text-[#00C897] transition-colors cursor-pointer"
+      >
         Tìm phòng
       </a>
-      <a routerLink="/blog" routerLinkActive="text-[#00C897]"
-        class="font-medium text-gray-700 hover:text-[#00C897] transition-colors cursor-pointer">
+      <a
+        routerLink="/blog"
+        routerLinkActive="active-link"
+        class="nav-link font-medium text-gray-700 hover:text-[#00C897] transition-colors cursor-pointer"
+      >
         Blog
       </a>
 
@@ -67,15 +77,22 @@
                 d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
             </svg>
           </button>
-          <button class="flex items-center space-x-1 px-3 py-2 border border-gray-300 text-gray-700 hover:border-[#00C897] hover:text-[#00C897] rounded-lg transition-colors cursor-pointer text-sm font-medium">
+          <button
+            routerLink="/chat"
+            routerLinkActive="active-link"
+            class="nav-btn flex items-center space-x-1 px-3 py-2 border border-gray-300 text-gray-700 hover:border-[#00C897] hover:text-[#00C897] rounded-lg transition-colors cursor-pointer text-sm font-medium"
+          >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                 d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
             </svg>
             <span>Liên hệ</span>
           </button>
-          <button routerLink="/my-posts"
-            class="flex items-center space-x-1 px-3 py-2 border border-gray-300 text-gray-700 hover:border-[#00C897] hover:text-[#00C897] rounded-lg transition-colors cursor-pointer text-sm font-medium">
+          <button
+            routerLink="/my-posts"
+            routerLinkActive="active-link"
+            class="nav-btn flex items-center space-x-1 px-3 py-2 border border-gray-300 text-gray-700 hover:border-[#00C897] hover:text-[#00C897] rounded-lg transition-colors cursor-pointer text-sm font-medium"
+          >
             <span>Quản lý tin</span>
           </button>
         </div>
@@ -103,19 +120,23 @@
     </div>
   </nav>
 
-  <!-- Mobile menu dropdown -->
-  <div *ngIf="isOpen" class="lg:hidden mobile-menu border-t border-gray-100 bg-white shadow-lg">
-    <div class="px-4 py-3 space-y-2">
-      <a routerLink="/" (click)="toggleMenu()"
-        class="block px-3 py-2 text-gray-700 hover:text-[#00C897] hover:bg-gray-50 rounded-lg transition-colors font-medium">
-        Trang chủ
-      </a>
-      <a routerLink="/search" (click)="toggleMenu()"
-        class="block px-3 py-2 text-gray-700 hover:text-[#00C897] hover:bg-gray-50 rounded-lg transition-colors font-medium">
+  <!-- Mobile dropdown menu (chỉ Tìm phòng + Blog) -->
+  <div *ngIf="isOpen" class="lg:hidden bg-white border-t shadow-lg">
+    <div class="px-4 py-3 space-y-1">
+      <a
+        routerLink="/search"
+        (click)="toggleMenu()"
+        routerLinkActive="active-link"
+        class="nav-link block py-3 px-2 font-medium text-gray-700 hover:text-[#00C897] hover:bg-gray-50 rounded-lg cursor-pointer transition-colors"
+      >
         Tìm phòng
       </a>
-      <a routerLink="/blog" (click)="toggleMenu()"
-        class="block px-3 py-2 text-gray-700 hover:text-[#00C897] hover:bg-gray-50 rounded-lg transition-colors font-medium">
+      <a
+        routerLink="/blog"
+        (click)="toggleMenu()"
+        routerLinkActive="active-link"
+        class="nav-link block py-3 px-2 font-medium text-gray-700 hover:text-[#00C897] hover:bg-gray-50 rounded-lg cursor-pointer transition-colors"
+      >
         Blog
       </a>
       <div class="pt-2 border-t border-gray-100">
@@ -149,8 +170,13 @@
 <!-- ===== MOBILE BOTTOM NAV BAR ===== -->
 <nav class="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.08)]">
   <div class="flex items-center justify-around px-2 py-1">
-    <a routerLink="/" routerLinkActive="text-[#00C897]" [routerLinkActiveOptions]="{ exact: true }"
-      class="flex flex-col items-center py-2 px-3 text-gray-500 hover:text-[#00C897] transition-colors cursor-pointer min-w-0">
+    <!-- Trang chủ -->
+    <a
+      routerLink="/"
+      routerLinkActive="active-link"
+      [routerLinkActiveOptions]="{ exact: true }"
+      class="nav-link flex flex-col items-center py-2 px-3 text-gray-500 hover:text-[#00C897] transition-colors cursor-pointer min-w-0"
+    >
       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
           d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
@@ -158,8 +184,12 @@
       <span class="text-xs font-medium mt-0.5">Trang chủ</span>
     </a>
 
-    <a routerLink="/my-posts" routerLinkActive="text-[#00C897]"
-      class="flex flex-col items-center py-2 px-3 text-gray-500 hover:text-[#00C897] transition-colors cursor-pointer min-w-0">
+    <!-- Quản lý tin -->
+    <a
+      routerLink="/my-posts"
+      routerLinkActive="active-link"
+      class="flex flex-col items-center py-2 px-3 text-gray-500 hover:text-[#00C897] transition-colors cursor-pointer min-w-0"
+    >
       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
           d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a2 2 0 012-2z"/>
@@ -177,7 +207,11 @@
       <span class="text-xs font-medium text-gray-600 mt-1">Đăng tin</span>
     </div>
 
-    <button class="flex flex-col items-center py-2 px-3 text-gray-500 hover:text-[#00C897] transition-colors cursor-pointer min-w-0">
+    <!-- Liên hệ -->
+    <button
+      (click)="goToChat()"
+      class="flex flex-col items-center py-2 px-3 text-gray-500 hover:text-[#00C897] transition-colors cursor-pointer min-w-0"
+    >
       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
           d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>

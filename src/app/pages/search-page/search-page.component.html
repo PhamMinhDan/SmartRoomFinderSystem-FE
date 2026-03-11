@@ -1,5 +1,5 @@
 <!-- search-page.component.html -->
-<div class="min-h-screen bg-gray-50 pt-20">
+<div class="min-h-screen bg-gray-50 pt-10">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
     <!-- Top bar: Bộ lọc title + Reset + Sắp xếp -->
     <div class="flex items-center justify-between mb-5">
@@ -266,23 +266,27 @@
                 </div>
 
                 <!-- Price overlay -->
-                <div class="absolute bottom-3 left-3 right-3 flex items-end justify-between">
-                  <!-- Giá -->
+                <div
+                  [ngClass]="view === 'list' ? 'top-3 left-3' : 'bottom-3 left-3'"
+                  class="absolute"
+                >
                   <div class="bg-white rounded-lg px-3 py-1 shadow flex items-center">
                     <span class="text-[#ff6b3d] font-bold text-lg">
                       {{ room.pricePerMonth ? formatPrice(room.pricePerMonth) : 'Chưa cập nhật' }}
                     </span>
                     <span class="text-gray-500 text-xs ml-1">/tháng</span>
                   </div>
-
-                  <!-- Trạng thái xác thực -->
-                  <span
-                    [ngClass]="room.isVerified ? 'bg-green-500' : 'bg-gray-500'"
-                    class="text-white text-xs px-2 py-0.5 rounded-full font-medium shadow"
-                  >
-                    {{ room.isVerified ? 'Đã xác thực' : 'Chưa xác thực' }}
-                  </span>
                 </div>
+
+                <!-- Xác thực -->
+                <span
+                  [ngClass]="view === 'list' ? 'bottom-3 right-3' : 'bottom-3 right-3'"
+                  class="absolute text-white text-xs px-2 py-0.5 rounded-full font-medium shadow"
+                  [class.bg-green-500]="room.isVerified"
+                  [class.bg-gray-500]="!room.isVerified"
+                >
+                  {{ room.isVerified ? 'Đã xác thực' : 'Chưa xác thực' }}
+                </span>
 
                 <!-- Favourite button -->
                 <button
@@ -423,7 +427,7 @@
                     Xem chi tiết
                   </button>
                   <button
-                    (click)="$event.stopPropagation(); contactRoom(room.roomId)"
+                    (click)="$event.stopPropagation(); contactRoom(room)"
                     class="flex-1 bg-[#FF6B6B] text-white py-1.5 rounded-lg text-xs font-semibold hover:bg-[#FF5E3A] transition-colors"
                   >
                     Chat

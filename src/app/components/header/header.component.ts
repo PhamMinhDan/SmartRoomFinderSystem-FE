@@ -91,4 +91,12 @@ export class HeaderComponent implements OnInit, OnDestroy {
       this.currentUser.identity_verified ? ['/post-room'] : ['/identity-verify']
     );
   }
+
+  goToChat(): void {
+    if (!this.currentUser) {
+      this.openLoginModal();
+      return;
+    }
+    this.router.navigate(['/chat']);
+  }
 }
