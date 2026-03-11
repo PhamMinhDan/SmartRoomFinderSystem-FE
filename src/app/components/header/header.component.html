@@ -3,7 +3,6 @@
     <!-- Logo -->
     <a routerLink="/" class="flex items-center space-x-2 cursor-pointer">
       <img src="/assets/logo_srf_removebg.png" alt="Home" class="object-contain logo_header" />
-      <!-- Ẩn trên desktop khi đã login -->
       <span
         class="text-xl lg:text-[22px] font-bold text-gray-900"
         [ngClass]="{ 'lg:hidden': currentUser }"
@@ -14,276 +13,130 @@
 
     <!-- Menu desktop -->
     <div class="hidden lg:flex items-center space-x-8">
-      <a
-        routerLink="/"
-        routerLinkActive="text-[#00C897]"
-        [routerLinkActiveOptions]="{ exact: true }"
-        class="font-medium text-gray-700 hover:text-[#00C897] transition-colors cursor-pointer"
-      >
+      <a routerLink="/" routerLinkActive="text-[#00C897]" [routerLinkActiveOptions]="{ exact: true }"
+        class="font-medium text-gray-700 hover:text-[#00C897] transition-colors cursor-pointer">
         Trang chủ
       </a>
-      <a
-        routerLink="/search"
-        routerLinkActive="text-[#00C897]"
-        class="font-medium text-gray-700 hover:text-[#00C897] transition-colors cursor-pointer"
-      >
+      <a routerLink="/search" routerLinkActive="text-[#00C897]"
+        class="font-medium text-gray-700 hover:text-[#00C897] transition-colors cursor-pointer">
         Tìm phòng
       </a>
-      <a
-        routerLink="/blog"
-        routerLinkActive="text-[#00C897]"
-        class="font-medium text-gray-700 hover:text-[#00C897] transition-colors cursor-pointer"
-      >
+      <a routerLink="/blog" routerLinkActive="text-[#00C897]"
+        class="font-medium text-gray-700 hover:text-[#00C897] transition-colors cursor-pointer">
         Blog
       </a>
 
       <div class="relative">
-        <input
-          type="text"
-          placeholder="Tìm kiếm..."
-          class="w-56 pl-10 pr-4 py-2 rounded-full border border-gray-300 focus:border-[#00C897] focus:ring-2 focus:ring-[#00C897]/20 outline-none transition-all text-sm"
-        />
-
-        <!-- Search Icon -->
-        <svg
-          class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M21 21l-4.35-4.35M16 10a6 6 0 11-12 0 6 6 0 0112 0z"
-          />
+        <input type="text" placeholder="Tìm kiếm..."
+          class="w-56 pl-10 pr-4 py-2 rounded-full border border-gray-300 focus:border-[#00C897] focus:ring-2 focus:ring-[#00C897]/20 outline-none transition-all text-sm"/>
+        <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2"
+          fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M21 21l-4.35-4.35M16 10a6 6 0 11-12 0 6 6 0 0112 0z"/>
         </svg>
       </div>
 
-      <button
-        (click)="goToPostRoom()"
-        class="bg-[#FF6B6B] text-white px-6 py-2.5 rounded-full hover:bg-[#FF5E3A] transition-colors font-bold cursor-pointer"
-      >
+      <button (click)="goToPostRoom()"
+        class="bg-[#FF6B6B] text-white px-6 py-2.5 rounded-full hover:bg-[#FF5E3A] transition-colors font-bold cursor-pointer">
         Đăng tin
       </button>
     </div>
 
     <!-- Auth desktop -->
     <div class="hidden lg:flex items-center space-x-4">
-      <button
-        *ngIf="!currentUser"
-        (click)="openLoginModal()"
-        class="border-2 border-[#00C897] text-[#00C897] px-6 py-2.5 rounded-lg font-medium hover:bg-[#00C897]/10 transition-colors cursor-pointer"
-      >
+      <!-- Chưa đăng nhập -->
+      <button *ngIf="!currentUser" (click)="openLoginModal()"
+        class="border-2 border-[#00C897] text-[#00C897] px-6 py-2.5 rounded-lg font-medium hover:bg-[#00C897]/10 transition-colors cursor-pointer">
         Đăng nhập
       </button>
 
+      <!-- Đã đăng nhập -->
       <div *ngIf="currentUser" class="flex items-center space-x-2">
         <div class="flex items-center space-x-1 mr-2">
-          <button
-            routerLink="/saved"
+          <button routerLink="/saved"
             class="p-2 text-gray-500 hover:text-[#FF6B6B] hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
-            title="Tin đã lưu"
-          >
+            title="Tin đã lưu">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-              />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
             </svg>
           </button>
-          <button
-            class="p-2 text-gray-500 hover:text-[#00C897] hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
-            title="Thông báo"
-          >
+          <button class="p-2 text-gray-500 hover:text-[#00C897] hover:bg-gray-100 rounded-lg transition-colors cursor-pointer" title="Thông báo">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-              />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
             </svg>
           </button>
-          <button
-            class="flex items-center space-x-1 px-3 py-2 border border-gray-300 text-gray-700 hover:border-[#00C897] hover:text-[#00C897] rounded-lg transition-colors cursor-pointer text-sm font-medium"
-          >
+          <button class="flex items-center space-x-1 px-3 py-2 border border-gray-300 text-gray-700 hover:border-[#00C897] hover:text-[#00C897] rounded-lg transition-colors cursor-pointer text-sm font-medium">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-              />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
             </svg>
             <span>Liên hệ</span>
           </button>
-          <button
-            routerLink="/my-posts"
-            class="flex items-center space-x-1 px-3 py-2 border border-gray-300 text-gray-700 hover:border-[#00C897] hover:text-[#00C897] rounded-lg transition-colors cursor-pointer text-sm font-medium"
-          >
+          <button routerLink="/my-posts"
+            class="flex items-center space-x-1 px-3 py-2 border border-gray-300 text-gray-700 hover:border-[#00C897] hover:text-[#00C897] rounded-lg transition-colors cursor-pointer text-sm font-medium">
             <span>Quản lý tin</span>
           </button>
         </div>
 
-        <!-- User dropdown desktop -->
-        <div class="relative">
-          <button
-            (click)="toggleUserMenu($event)"
-            class="flex items-center space-x-3 hover:bg-gray-50 rounded-lg px-3 py-2 transition-colors cursor-pointer"
-          >
-            <div class="relative">
-              <img
-                *ngIf="currentUser.avatar_url"
-                [src]="currentUser.avatar_url"
-                [alt]="currentUser.full_name"
-                class="w-10 h-10 rounded-full object-cover border-2 border-[#00C897]"
-              />
-              <div
-                *ngIf="!currentUser.avatar_url"
-                class="w-10 h-10 rounded-full bg-[#00C897] flex items-center justify-center text-white font-bold border-2 border-[#00C897]"
-              >
-                {{ getInitials(currentUser.full_name || currentUser.username) }}
-              </div>
-            </div>
-          </button>
-
-          <div
-            *ngIf="isUserMenuOpen"
-            class="absolute right-0 mt-2 w-67 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
-          >
-            <div class="px-4 py-3 border-b border-gray-200">
-              <p class="text-sm font-medium text-gray-900">
-                {{ currentUser.full_name || currentUser.username }}
-              </p>
-              <p class="text-sm text-gray-500 whitespace-nowrap">{{ currentUser.email }}</p>
-            </div>
-            <a
-              routerLink="/profile"
-              (click)="onProfileClick($event)"
-              class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer"
-              >Thông tin cá nhân</a
-            >
-            <a
-              routerLink="/my-posts"
-              class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer"
-              >Tin đăng của tôi</a
-            >
-            <a
-              routerLink="/saved"
-              class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer"
-              >Tin đã lưu</a
-            >
-            <div class="border-t border-gray-200 mt-2 pt-2">
-              <button
-                (click)="logout()"
-                class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 cursor-pointer"
-              >
-                Đăng xuất
-              </button>
-            </div>
-          </div>
-        </div>
+        <!-- ✅ Shared dropdown component, size="md" -->
+        <app-user-avatar-dropdown size="md"></app-user-avatar-dropdown>
       </div>
     </div>
 
     <!-- Mobile: tim + chuông + hamburger -->
     <div class="lg:hidden flex items-center space-x-1">
-      <!-- Tim (chỉ khi đã login) -->
-      <button
-        *ngIf="currentUser"
-        routerLink="/saved"
-        class="p-2 text-gray-500 hover:text-[#FF6B6B] rounded-lg transition-colors cursor-pointer"
-      >
+      <button *ngIf="currentUser" routerLink="/saved"
+        class="p-2 text-gray-500 hover:text-[#FF6B6B] rounded-lg transition-colors cursor-pointer">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-          />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
         </svg>
       </button>
-      <!-- Chuông (chỉ khi đã login) -->
-      <button
-        *ngIf="currentUser"
-        class="p-2 text-gray-500 hover:text-[#00C897] rounded-lg transition-colors cursor-pointer"
-      >
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-          />
-        </svg>
-      </button>
-      <!-- Hamburger -->
-      <button
-        (click)="toggleMenu()"
-        class="p-2 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
-      >
-        <svg *ngIf="!isOpen" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M4 6h16M4 12h16M4 18h16"
-          />
-        </svg>
-        <svg *ngIf="isOpen" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M6 18L18 6M6 6l12 12"
-          />
+      <button (click)="toggleMenu()"
+        class="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
         </svg>
       </button>
     </div>
   </nav>
 
-  <!-- Mobile dropdown menu (chỉ Tìm phòng + Blog) -->
-  <div *ngIf="isOpen" class="lg:hidden bg-white border-t shadow-lg">
-    <div class="px-4 py-3 space-y-1">
-      <a
-        routerLink="/search"
-        (click)="toggleMenu()"
-        routerLinkActive="text-[#00C897]"
-        class="block py-3 px-2 font-medium text-gray-700 hover:text-[#00C897] hover:bg-gray-50 rounded-lg cursor-pointer transition-colors"
-      >
+  <!-- Mobile menu dropdown -->
+  <div *ngIf="isOpen" class="lg:hidden mobile-menu border-t border-gray-100 bg-white shadow-lg">
+    <div class="px-4 py-3 space-y-2">
+      <a routerLink="/" (click)="toggleMenu()"
+        class="block px-3 py-2 text-gray-700 hover:text-[#00C897] hover:bg-gray-50 rounded-lg transition-colors font-medium">
+        Trang chủ
+      </a>
+      <a routerLink="/search" (click)="toggleMenu()"
+        class="block px-3 py-2 text-gray-700 hover:text-[#00C897] hover:bg-gray-50 rounded-lg transition-colors font-medium">
         Tìm phòng
       </a>
-      <a
-        routerLink="/blog"
-        (click)="toggleMenu()"
-        routerLinkActive="text-[#00C897]"
-        class="block py-3 px-2 font-medium text-gray-700 hover:text-[#00C897] hover:bg-gray-50 rounded-lg cursor-pointer transition-colors"
-      >
+      <a routerLink="/blog" (click)="toggleMenu()"
+        class="block px-3 py-2 text-gray-700 hover:text-[#00C897] hover:bg-gray-50 rounded-lg transition-colors font-medium">
         Blog
       </a>
-      <!-- Đăng nhập nếu chưa login -->
-      <div *ngIf="!currentUser" class="pt-2 border-t mt-2">
-        <button
-          (click)="openLoginModal(); toggleMenu()"
-          class="w-full border-2 border-[#00C897] text-[#00C897] px-6 py-3 rounded-lg font-bold hover:bg-[#00C897]/10 transition-colors cursor-pointer"
-        >
+      <div class="pt-2 border-t border-gray-100">
+        <button *ngIf="!currentUser" (click)="openLoginModal(); toggleMenu()"
+          class="w-full border-2 border-[#00C897] text-[#00C897] px-4 py-2 rounded-lg font-medium hover:bg-[#00C897]/10 transition-colors">
           Đăng nhập
+        </button>
+        <button (click)="goToPostRoom(); toggleMenu()"
+          class="w-full mt-2 bg-[#FF6B6B] text-white px-4 py-2 rounded-full hover:bg-[#FF5E3A] transition-colors font-bold">
+          Đăng tin
         </button>
       </div>
     </div>
   </div>
 
-  <!-- Modal đăng nhập -->
+  <!-- Login modal -->
   <app-login-modal
     *ngIf="isLoginModalOpen"
-    [isLoginOpen]="isLoginModalOpen"
     (close)="closeLoginModal()"
     (loginSuccess)="onLoginSuccess()"
-  >
-  </app-login-modal>
+  ></app-login-modal>
 
   <!-- Modal xác nhận đăng xuất -->
   <app-confirm-logout-modal
@@ -294,191 +147,58 @@
 </header>
 
 <!-- ===== MOBILE BOTTOM NAV BAR ===== -->
-<nav
-  class="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.08)]"
->
+<nav class="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.08)]">
   <div class="flex items-center justify-around px-2 py-1">
-    <!-- Trang chủ -->
-    <a
-      routerLink="/"
-      routerLinkActive="text-[#00C897]"
-      [routerLinkActiveOptions]="{ exact: true }"
-      class="flex flex-col items-center py-2 px-3 text-gray-500 hover:text-[#00C897] transition-colors cursor-pointer min-w-0"
-    >
+    <a routerLink="/" routerLinkActive="text-[#00C897]" [routerLinkActiveOptions]="{ exact: true }"
+      class="flex flex-col items-center py-2 px-3 text-gray-500 hover:text-[#00C897] transition-colors cursor-pointer min-w-0">
       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-        />
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
       </svg>
       <span class="text-xs font-medium mt-0.5">Trang chủ</span>
     </a>
 
-    <!-- Quản lý tin -->
-    <a
-      routerLink="/my-posts"
-      routerLinkActive="text-[#00C897]"
-      class="flex flex-col items-center py-2 px-3 text-gray-500 hover:text-[#00C897] transition-colors cursor-pointer min-w-0"
-    >
+    <a routerLink="/my-posts" routerLinkActive="text-[#00C897]"
+      class="flex flex-col items-center py-2 px-3 text-gray-500 hover:text-[#00C897] transition-colors cursor-pointer min-w-0">
       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a2 2 0 012-2z"
-        />
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a2 2 0 012-2z"/>
       </svg>
       <span class="text-xs font-medium mt-0.5">Quản lý tin</span>
     </a>
 
-    <!-- Đăng tin (nút + nổi bật giữa) -->
+    <!-- Đăng tin nổi bật -->
     <div class="flex flex-col items-center -mt-5 cursor-pointer" (click)="goToPostRoom()">
-      <button
-        class="w-14 h-14 bg-[#FF6B6B] rounded-full flex items-center justify-center shadow-lg hover:bg-[#FF5E3A] transition-colors border-4 border-white cursor-pointer"
-      >
+      <button class="w-14 h-14 bg-[#FF6B6B] rounded-full flex items-center justify-center shadow-lg hover:bg-[#FF5E3A] transition-colors border-4 border-white cursor-pointer">
         <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2.5"
-            d="M12 4v16m8-8H4"
-          />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
         </svg>
       </button>
       <span class="text-xs font-medium text-gray-600 mt-1">Đăng tin</span>
     </div>
 
-    <!-- Liên hệ -->
-    <button
-      class="flex flex-col items-center py-2 px-3 text-gray-500 hover:text-[#00C897] transition-colors cursor-pointer min-w-0"
-    >
+    <button class="flex flex-col items-center py-2 px-3 text-gray-500 hover:text-[#00C897] transition-colors cursor-pointer min-w-0">
       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-        />
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
       </svg>
       <span class="text-xs font-medium mt-0.5">Liên hệ</span>
     </button>
 
-    <!-- Tài khoản -->
-    <div class="relative">
-      <!-- Chưa login -->
-      <button
-        *ngIf="!currentUser"
-        (click)="openLoginModal()"
-        class="flex flex-col items-center py-2 px-3 text-gray-500 hover:text-[#00C897] transition-colors cursor-pointer min-w-0"
-      >
+    <!-- Tài khoản: dùng shared dropdown, size="sm" -->
+    <div class="flex flex-col items-center py-2 px-3 cursor-pointer min-w-0">
+      <button *ngIf="!currentUser" (click)="openLoginModal()"
+        class="flex flex-col items-center text-gray-500 hover:text-[#00C897] transition-colors">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-          />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
         </svg>
         <span class="text-xs font-medium mt-0.5">Tài khoản</span>
       </button>
 
-      <!-- Đã login: avatar -->
-      <button
-        *ngIf="currentUser"
-        (click)="toggleUserMenu($event)"
-        class="flex flex-col items-center py-2 px-3 transition-colors cursor-pointer min-w-0"
-        [ngClass]="isUserMenuOpen ? 'text-[#00C897]' : 'text-gray-500'"
-      >
-        <img
-          *ngIf="currentUser.avatar_url"
-          [src]="currentUser.avatar_url"
-          [alt]="currentUser.full_name"
-          class="w-7 h-7 rounded-full object-cover border-2 border-[#00C897]"
-        />
-        <div
-          *ngIf="!currentUser.avatar_url"
-          class="w-7 h-7 rounded-full bg-[#00C897] flex items-center justify-center text-white font-bold text-xs"
-        >
-          {{ getInitials(currentUser.full_name || currentUser.username) }}
-        </div>
-        <span class="text-xs font-medium mt-0.5 text-[#00C897]">Tài khoản</span>
-      </button>
-
-      <!-- User menu popup (hiện phía trên bottom nav) -->
-      <div
-        *ngIf="isUserMenuOpen && currentUser"
-        class="absolute bottom-16 right-0 w-56 bg-white rounded-xl shadow-2xl border border-gray-200 py-2 z-50"
-      >
-        <div class="px-4 py-3 border-b border-gray-200">
-          <p class="text-sm font-semibold text-gray-900">
-            {{ currentUser.full_name || currentUser.username }}
-          </p>
-          <p class="text-xs text-gray-500 truncate">{{ currentUser.email }}</p>
-        </div>
-        <a
-          routerLink="/profile"
-          (click)="onProfileClick($event)"
-          class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer"
-        >
-          <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-            />
-          </svg>
-          Thông tin cá nhân
-        </a>
-        <a
-          routerLink="/my-posts"
-          (click)="isUserMenuOpen = false"
-          class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer"
-        >
-          <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-            />
-          </svg>
-          Tin đăng của tôi
-        </a>
-        <a
-          routerLink="/saved"
-          (click)="isUserMenuOpen = false"
-          class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer"
-        >
-          <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-            />
-          </svg>
-          Tin đã lưu
-        </a>
-        <div class="border-t border-gray-200 mt-1 pt-1">
-          <button
-            (click)="logout(); isUserMenuOpen = false"
-            class="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 cursor-pointer"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-              />
-            </svg>
-            Đăng xuất
-          </button>
-        </div>
-      </div>
+      <!-- ✅ Shared dropdown, mobile size="sm" -->
+      <app-user-avatar-dropdown *ngIf="currentUser" size="sm"></app-user-avatar-dropdown>
+      <span *ngIf="currentUser" class="text-xs font-medium mt-0.5 text-[#00C897]">Tài khoản</span>
     </div>
   </div>
 </nav>

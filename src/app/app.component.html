@@ -1,8 +1,9 @@
 <div class="min-h-screen bg-white">
-  <!-- Header tự quản lý modal của nó -->
-  <app-header></app-header>
+  <!-- Header user thường — ẩn khi đang ở /admin -->
+  <app-header *ngIf="!isAdminRoute"></app-header>
 
-  <main class="pt-16">
+  <!-- pt-16 chỉ cần khi có fixed header -->
+  <main [class.pt-16]="!isAdminRoute">
     <router-outlet></router-outlet>
   </main>
 </div>
