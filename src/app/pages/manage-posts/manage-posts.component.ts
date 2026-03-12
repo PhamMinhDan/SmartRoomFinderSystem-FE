@@ -67,7 +67,6 @@ export class ManagePostsComponent implements OnInit, OnDestroy {
     { key: 'all', label: 'Đang hiển thị', count: 0 },
     { key: 'expired', label: 'Hết hạn', count: 0 },
     { key: 'rejected', label: 'Bị từ chối', count: 0 },
-    { key: 'payment', label: 'Cần thanh toán', count: 0 },
     { key: 'inbox', label: 'Tin nhắn', count: 0 },
     { key: 'pending', label: 'Chờ duyệt', count: 0 },
   ];
@@ -133,7 +132,7 @@ export class ManagePostsComponent implements OnInit, OnDestroy {
 
   updateTabCounts() {
     this.tabs[0].count = this.rooms.filter((r) => r.isApproved).length;
-    this.tabs[5].count = this.rooms.filter((r) => !r.isApproved).length;
+    this.tabs[4].count = this.rooms.filter((r) => !r.isApproved).length;
   }
 
   onSearch() {
@@ -263,5 +262,40 @@ export class ManagePostsComponent implements OnInit, OnDestroy {
       this.currentMonth++;
     }
     this.buildCalendar();
+  }
+
+  getExpireText(dateStr: string): string {
+    const now = new Date();
+    const expire = new Date(dateStr);
+
+    const diff = expire.getTime() - now.getTime();
+    const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+
+    if (days < 0) {
+      return 'Đã hết hạn';
+    }
+
+    if (days === 0) {
+      return 'Hết hạn hôm nay';
+    }
+
+    return `Còn ${days} ngày`;
+  }
+  getExpireClass(dateStr: string): string {
+    const now = new Date();
+    const expire = new Date(dateStr);
+
+    const diff = expire.getTime() - now.getTime();
+    const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+
+    if (days < 0) {
+      return 'text-slate-400';
+    }
+
+    if (days <= 3) {
+      return 'text-red-500';
+    }
+
+    return 'text-emerald-600';
   }
 }

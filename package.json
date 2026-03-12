@@ -36,6 +36,7 @@
     "@types/leaflet": "^1.9.21",
     "leaflet": "^1.9.4",
     "lucide-angular": "^0.562.0",
+    "mapbox-gl": "^3.19.1",
     "rxjs": "~7.8.0",
     "sockjs-client": "^1.6.1",
     "stompjs": "^2.3.3",

@@ -221,10 +221,13 @@
                   <span *ngIf="room.expiredAt"
                     >Ngày hết hạn: {{ room.expiredAt | date: 'dd/MM/yyyy' }}</span
                   >
-                  <span *ngIf="room.postTier"
-                    >Hạng tin đăng:
-                    <strong class="text-amber-600">{{ room.postTier }}</strong></span
+                  <span
+                    *ngIf="room.expiredAt"
+                    class="text-[11px] font-medium"
+                    [ngClass]="getExpireClass(room.expiredAt)"
                   >
+                    {{ getExpireText(room.expiredAt) }}
+                  </span>
                 </div>
               </div>
 

@@ -412,3 +412,19 @@
     transform: translateY(0);
   }
 }
+.video-upload-box {
+  border: 2px dashed #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fafafa;
+  transition: 0.2s;
+}
+
+.video-upload-box:hover {
+  border-color: #00c897;
+  background: #f8fffc;
+}

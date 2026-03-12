@@ -19,6 +19,7 @@ import {
 } from '@angular/forms';
 import { AuthService, UserResponse } from '../../services/auth.service';
 import { AddressService, AddressResponse } from '../../services/address.service';
+import { LocationService } from '../../services/location.service';
 
 @Component({
   selector: 'app-profile',
@@ -67,6 +68,7 @@ export class ProfileComponent implements OnInit, AfterViewInit {
     private fb: FormBuilder,
     private router: Router,
     private http: HttpClient,
+    private locationService: LocationService,
     private elementRef: ElementRef,
     @Inject(PLATFORM_ID) private platformId: Object,
   ) {}
@@ -118,20 +120,20 @@ export class ProfileComponent implements OnInit, AfterViewInit {
   }
 
   loadCities() {
-    this.http.get<any[]>('/province-api/api/v1/p/').subscribe((data) => {
+    this.locationService.getCities().subscribe((data) => {
       this.cities = data;
     });
   }
 
   loadDistricts(cityCode: number) {
-    this.http.get<any>(`/province-api/api/v1/p/${cityCode}?depth=2`).subscribe((data) => {
+    this.locationService.getDistricts(cityCode).subscribe((data) => {
       this.districts = data.districts;
       this.wards = [];
     });
   }
 
   loadWards(districtCode: number) {
-    this.http.get<any>(`/province-api/api/v1/d/${districtCode}?depth=2`).subscribe((data) => {
+    this.locationService.getWards(districtCode).subscribe((data) => {
       this.wards = data.wards;
     });
   }
