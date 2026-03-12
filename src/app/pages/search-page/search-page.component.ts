@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
+import { LocationService } from '../../services/location.service';
 
 interface RoomImage {
   imageId: number;
@@ -36,7 +37,12 @@ interface Room {
   landlordName: string;
   landlordAvatar: string;
   images: RoomImage[];
-  amenities: string[];
+  amenities: {
+    amenityId: number;
+    amenityName: string;
+    iconUrl?: string;
+    category?: string;
+  }[];
   createdAt: string;
   updatedAt: string;
 }
@@ -75,26 +81,19 @@ export class SearchPageComponent implements OnInit {
   loading = false;
   hasSearched = false;
 
-  // ── Static options ────────────────────────────────
-  districts: { [key: string]: string[] } = {
-    'Hà Nội': [
-      'Cầu Giấy',
-      'Đống Đa',
-      'Thanh Xuân',
-      'Hoàng Mai',
-      'Long Biên',
-      'Ba Đình',
-      'Hà Đông',
-      'Nam Từ Liêm',
-    ],
-    'TP. Hồ Chí Minh': ['Quận 1', 'Quận 7', 'Bình Thạnh', 'Tân Bình', 'Phú Nhuận', 'Gò Vấp'],
-    'Đà Nẵng': ['Hải Châu', 'Thanh Khê', 'Sơn Trà', 'Liên Chiểu', 'Ngũ Hành Sơn'],
-  };
+  cities: any[] = [];
+  districts: any[] = [];
+  cityDropdown = false;
+  districtDropdown = false;
+
+  citySearch = '';
+  districtSearch = '';
 
   roomTypes = [
     { value: '', label: 'Tất cả' },
-    { value: 'private', label: 'Phòng riêng' },
-    { value: 'shared', label: 'Phòng chung' },
+    { value: 'MOTEL', label: 'Phòng trọ' },
+    { value: 'MINI_APARTMENT', label: 'Căn hộ mini' },
+    { value: 'APARTMENT', label: 'Chung cư' },
   ];
 
   amenitiesList = [
@@ -117,11 +116,25 @@ export class SearchPageComponent implements OnInit {
   constructor(
     private http: HttpClient,
     private router: Router,
+    private locationService: LocationService,
   ) {}
 
   ngOnInit() {
-    // Load tất cả phòng khi vào trang, không filter
+    this.locationService.getCities().subscribe((data) => {
+      this.cities = data;
+    });
+
     this.fetchRooms(new HttpParams());
+  }
+
+  onCityChange() {
+    const city = this.cities.find((c) => c.name === this.city);
+
+    if (!city) return;
+
+    this.locationService.getDistricts(city.code).subscribe((data) => {
+      this.districts = data.districts;
+    });
   }
 
   // ── Core fetch (dùng chung) ───────────────────────
@@ -204,11 +217,6 @@ export class SearchPageComponent implements OnInit {
     });
   }
 
-  // ── Filter helpers ────────────────────────────────
-  onCityChange() {
-    this.district = '';
-  }
-
   toggleAmenity(amenity: string) {
     const i = this.amenities.indexOf(amenity);
     if (i > -1) this.amenities.splice(i, 1);
@@ -234,10 +242,6 @@ export class SearchPageComponent implements OnInit {
     this.fetchRooms(new HttpParams());
   }
 
-  getDistricts(): string[] {
-    return this.districts[this.city] || [];
-  }
-
   // ── Display helpers ───────────────────────────────
   formatPrice(price: number): string {
     if (price >= 1_000_000) {
@@ -254,5 +258,26 @@ export class SearchPageComponent implements OnInit {
       unfurnished: 'Không nội thất',
     };
     return map[level] || level || 'Chưa cập nhật';
+  }
+  filteredCities() {
+    return this.cities.filter((c) => c.name.toLowerCase().includes(this.citySearch.toLowerCase()));
+  }
+  filteredDistricts() {
+    return this.districts.filter((d) =>
+      d.name.toLowerCase().includes(this.districtSearch.toLowerCase()),
+    );
+  }
+  selectCity(city: any) {
+    this.city = city.name;
+    this.cityDropdown = false;
+    this.district = '';
+
+    this.locationService.getDistricts(city.code).subscribe((res) => {
+      this.districts = res.districts;
+    });
+  }
+  selectDistrict(d: any) {
+    this.district = d.name;
+    this.districtDropdown = false;
   }
 }

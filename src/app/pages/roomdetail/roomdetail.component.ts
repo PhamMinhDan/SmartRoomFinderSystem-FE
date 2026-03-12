@@ -5,6 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { environment } from '../../../environments/environment';
+import mapboxgl from 'mapbox-gl';
 
 interface RoomImage {
   imageId: number;
@@ -47,10 +48,12 @@ interface Room {
   landlordId: string;
   landlordName: string;
   landlordAvatar: string;
+  phoneNumber: string;
   images: RoomImage[];
   amenities: Amenity[];
   createdAt: string;
   updatedAt: string;
+  expiredAt?: string;
 }
 
 @Component({
@@ -58,6 +61,7 @@ interface Room {
   standalone: true,
   imports: [CommonModule, RouterModule, FormsModule],
   templateUrl: './roomdetail.component.html',
+  styleUrl: './roomdetail.component.css',
 })
 export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   room: Room | null = null;
@@ -122,6 +126,14 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  maskPhone(phone?: string): string {
+    if (!phone) return 'Chưa cập nhật';
+
+    if (phone.length < 7) return phone;
+
+    return phone.substring(0, 3) + '****' + phone.substring(phone.length - 2);
+  }
+
   loadRoom(id: number) {
     this.loading = true;
     this.mapInitialized = false;
@@ -130,8 +142,16 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     this.http.get<any>(`${environment.apiUrl}/rooms/${id}`).subscribe({
       next: (res) => {
         this.room = res?.data ?? res;
+        this.http.post(`${environment.apiUrl}/rooms/${id}/view`, {}).subscribe({
+          next: (view: any) => {
+            if (this.room) {
+              this.room.viewCount = view?.data ?? this.room.viewCount + 1;
+            }
+          },
+        });
         this.loading = false;
         this.loadSimilarRooms();
+        setTimeout(() => this.initMap(), 200);
       },
       error: () => {
         this.error = 'Không tìm thấy phòng hoặc đã xảy ra lỗi.';
@@ -191,98 +211,135 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   async initMap() {
-    if (!isPlatformBrowser(this.platformId) || !this.room) return;
-    this.L = await import('leaflet');
+    if (!this.room) return;
+
+    mapboxgl.accessToken = this.MAPBOX_TOKEN;
 
     const roomLat = Number(this.room.latitude);
     const roomLng = Number(this.room.longitude);
 
-    if (this.map) {
-      this.map.remove();
-      this.map = null;
-    }
-
-    this.map = this.L.map('roomDetailMap').setView([roomLat, roomLng], 15);
-
-    this.L.tileLayer(
-      `https://api.mapbox.com/styles/v1/mapbox/streets-v11/tiles/{z}/{x}/{y}?access_token=${this.MAPBOX_TOKEN}`,
-      { attribution: '© Mapbox © OpenStreetMap', tileSize: 512, zoomOffset: -1 },
-    ).addTo(this.map);
-
-    const redIcon = this.L.icon({
-      iconUrl:
-        'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
-      shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-      iconSize: [25, 41],
-      iconAnchor: [12, 41],
-      popupAnchor: [1, -34],
-      shadowSize: [40, 40],
+    this.map = new mapboxgl.Map({
+      container: 'roomDetailMap',
+      style: 'mapbox://styles/mapbox/streets-v12',
+      center: [roomLng, roomLat],
+      zoom: 15,
     });
 
-    this.L.marker([roomLat, roomLng], { icon: redIcon })
-      .addTo(this.map)
-      .bindPopup(`<b>Vị trí phòng trọ</b><br>${this.room.address}`)
-      .openPopup();
+    this.map.on('load', () => {
+      // marker phòng
+      const roomEl = document.createElement('div');
+      roomEl.className = 'pulse-marker';
 
-    // Nếu RENTER có địa chỉ → vẽ đường đi
-    const user = this.authService.currentUserValue;
-    if (this.isRenter && user?.address?.latitude && user?.address?.longitude) {
-      const userLat = Number(user.address.latitude);
-      const userLng = Number(user.address.longitude);
+      new mapboxgl.Marker({
+        element: roomEl,
+        anchor: 'center',
+      })
+        .setLngLat([roomLng, roomLat])
+        .setPopup(
+          new mapboxgl.Popup().setHTML(
+            `<b>📍 Phòng trọ</b><br>
+      ${this.room?.address}, ${this.room?.wardName}, ${this.room?.districtName}, ${this.room?.cityName}`,
+          ),
+        )
+        .addTo(this.map);
 
-      const blueIcon = this.L.icon({
-        iconUrl:
-          'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
-        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-        iconSize: [25, 41],
-        iconAnchor: [12, 41],
-        popupAnchor: [1, -34],
-        shadowSize: [40, 40],
-      });
+      console.log('ROOM:', roomLat, roomLng);
 
-      this.L.marker([userLat, userLng], { icon: blueIcon })
-        .addTo(this.map)
-        .bindPopup('<b>Vị trí của bạn</b>');
+      if (this.isRenter) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const userLat = pos.coords.latitude;
+            const userLng = pos.coords.longitude;
 
-      // Polyline tạm
-      const tempLine = this.L.polyline(
-        [
-          [userLat, userLng],
-          [roomLat, roomLng],
-        ],
-        { color: '#00C897', weight: 3, dashArray: '8 5', opacity: 0.5 },
-      ).addTo(this.map);
-      this.map.fitBounds(tempLine.getBounds(), { padding: [50, 50] });
+            const userEl = document.createElement('div');
+            userEl.className = 'user-marker';
 
-      // Lấy route thực từ Mapbox Directions
-      this.fetchRoute(userLat, userLng, roomLat, roomLng);
-    }
+            new mapboxgl.Marker({
+              element: userEl,
+              anchor: 'center',
+            })
+              .setLngLat([userLng, userLat])
+              .setPopup(new mapboxgl.Popup().setHTML(`<b>📍 Vị trí hiện tại của bạn</b>`))
+              .addTo(this.map);
+
+            this.fetchRoute(userLat, userLng, roomLat, roomLng);
+          },
+
+          () => {
+            const user = this.authService.currentUserValue;
+
+            if (user?.address?.latitude && user?.address?.longitude) {
+              const userLat = user.address.latitude;
+              const userLng = user.address.longitude;
+
+              const fullAddress = `${user.address.street_address}, ${user.address.ward_name}, ${user.address.district_name}, ${user.address.city_name}`;
+
+              new mapboxgl.Marker({ color: 'blue' })
+                .setLngLat([userLng, userLat])
+                .setPopup(
+                  new mapboxgl.Popup().setHTML(`<b>📍 Địa chỉ của bạn</b><br>${fullAddress}`),
+                )
+                .addTo(this.map);
+
+              this.fetchRoute(userLat, userLng, roomLat, roomLng);
+            }
+          },
+        );
+      }
+    });
 
     this.mapInitialized = true;
+  }
+  addUserMarker(lat: number, lng: number) {
+    const el = document.createElement('div');
+    el.className = 'user-marker';
+
+    new mapboxgl.Marker(el)
+      .setLngLat([lng, lat])
+      .setPopup(new mapboxgl.Popup().setText('📍 Vị trí của bạn'))
+      .addTo(this.map);
   }
 
   fetchRoute(fromLat: number, fromLng: number, toLat: number, toLng: number) {
     const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${fromLng},${fromLat};${toLng},${toLat}?geometries=geojson&access_token=${this.MAPBOX_TOKEN}`;
-    this.http.get<any>(url).subscribe({
-      next: (data) => {
-        if (!data?.routes?.[0] || !this.map || !this.L) return;
-        // Xóa polyline tạm
-        this.map.eachLayer((layer: any) => {
-          if (layer instanceof this.L.Polyline) this.map.removeLayer(layer);
-        });
 
-        const coords = data.routes[0].geometry.coordinates;
-        const latlngs = coords.map((c: number[]) => [c[1], c[0]]);
-        const dist = (data.routes[0].distance / 1000).toFixed(1);
-        const dur = Math.round(data.routes[0].duration / 60);
+    this.http.get<any>(url).subscribe((res) => {
+      const route = res.routes[0];
 
-        const routeLine = this.L.polyline(latlngs, { color: '#00C897', weight: 5 }).addTo(this.map);
-        routeLine
-          .bindTooltip(`🚗 ${dist} km • ~${dur} phút`, { permanent: true, direction: 'center' })
-          .openTooltip();
-        this.map.fitBounds(routeLine.getBounds(), { padding: [50, 50] });
-      },
-      error: () => {},
+      const distanceKm = (route.distance / 1000).toFixed(1);
+      const durationMin = Math.round(route.duration / 60);
+
+      console.log('Distance:', distanceKm, 'km');
+      console.log('Duration:', durationMin, 'phút');
+
+      const data = route.geometry;
+
+      this.map.addSource('route', {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          geometry: data,
+        },
+      });
+
+      this.map.addLayer({
+        id: 'route',
+        type: 'line',
+        source: 'route',
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round',
+        },
+        paint: {
+          'line-color': '#c81e00',
+          'line-width': 5,
+        },
+      });
+
+      new mapboxgl.Popup({ closeButton: false })
+        .setLngLat([toLng, toLat])
+        .setHTML(`🚗 ${distanceKm} km • ${durationMin} phút`)
+        .addTo(this.map);
     });
   }
 
@@ -396,13 +453,15 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   formatRoomType(type: string): string {
+    if (!type) return 'Chưa cập nhật';
+
     const map: { [k: string]: string } = {
-      private: 'Phòng riêng',
-      shared: 'Phòng chung',
-      single: 'Phòng đơn',
-      double: 'Phòng đôi',
+      MOTEL: 'Phòng trọ',
+      APARTMENT: 'Chung cư',
+      MINI_APARTMENT: 'Căn hộ mini',
     };
-    return map[type] || type || 'Chưa cập nhật';
+
+    return map[type.toUpperCase()] || type;
   }
 
   formatDate(dateStr: string): string {
@@ -442,5 +501,42 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
   getRatingArray(rating: number): boolean[] {
     return [1, 2, 3, 4, 5].map((i) => i <= Math.round(rating || 0));
+  }
+  getExpireClass(dateStr?: string): string {
+    if (!dateStr) return '';
+
+    const now = new Date();
+    const expire = new Date(dateStr);
+
+    if (isNaN(expire.getTime())) return '';
+
+    const diff = expire.getTime() - now.getTime();
+    const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+
+    if (days <= 3) {
+      return 'bg-red-100 text-red-600 border-red-200';
+    }
+
+    return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+  }
+  getExpireText(dateStr?: string): string {
+    if (!dateStr) return '';
+
+    const now = new Date();
+    const expire = new Date(dateStr);
+
+    if (isNaN(expire.getTime())) return '';
+
+    const diff = expire.getTime() - now.getTime();
+    const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+
+    if (days < 0) return 'Đã hết hạn';
+    if (days === 0) return 'Hết hạn hôm nay';
+
+    return `Còn ${days} ngày`;
+  }
+
+  isVideo(url: string): boolean {
+    return url?.includes('/video/upload/') || url?.endsWith('.mp4');
   }
 }

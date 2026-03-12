@@ -12,7 +12,8 @@ import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../../services/auth.service';
 import { environment } from '../../../../environments/environment';
 import { firstValueFrom } from 'rxjs';
-
+import mapboxgl from 'mapbox-gl';
+import { LocationService } from '../../../services/location.service';
 interface Amenity {
   amenityId: number;
   amenityName: string;
@@ -39,6 +40,13 @@ export class PostRoomComponent implements OnInit {
   // Images
   imagePreviews: string[] = [];
   imageFiles: File[] = [];
+  videoFile: File | null = null;
+  videoPreview: string | null = null;
+  videoUploading = false;
+  videoProgress = 0;
+
+  imageError = '';
+  videoError = '';
 
   // Location modal
   showLocationModal = false;
@@ -65,11 +73,14 @@ export class PostRoomComponent implements OnInit {
   // Map
   private map: any;
   private L: any;
+  private MAPBOX_TOKEN =
+    'pk.eyJ1IjoibHVvbmcyMyIsImEiOiJjbW1raDNueWcxZGJ3MnFwemg1aTI2cXF1In0.P4Zv9Up4zZaXXn7wG3ue4g';
 
   constructor(
     private fb: FormBuilder,
     private router: Router,
     private http: HttpClient,
+    private locationService: LocationService,
     private authService: AuthService,
     @Inject(PLATFORM_ID) private platformId: Object,
   ) {}
@@ -78,9 +89,16 @@ export class PostRoomComponent implements OnInit {
     this.roomForm = this.fb.group({
       title: ['', [Validators.required, Validators.maxLength(255)]],
       description: [''],
+
       pricePerMonth: [null, [Validators.required, Validators.min(1)]],
-      depositAmount: [null],
-      areaSize: [null],
+      depositAmount: [null, [Validators.min(0)]],
+
+      areaSize: [null, [Validators.min(1)]],
+
+      roomType: ['', Validators.required],
+
+      capacity: [1, [Validators.min(1), Validators.max(5)]],
+
       furnishLevel: [''],
     });
 
@@ -98,7 +116,6 @@ export class PostRoomComponent implements OnInit {
     this.http.get<any>(`${environment.apiUrl}/amenities`).subscribe({
       next: (res) => {
         this.amenities = res.data || [];
-        console.log('Loaded amenities:', this.amenities);
       },
       error: (err) => {
         console.error('Amenity API error', err);
@@ -135,14 +152,48 @@ export class PostRoomComponent implements OnInit {
   onImagesSelect(event: Event) {
     const input = event.target as HTMLInputElement;
     const files = Array.from(input.files || []);
+
+    this.imageError = '';
+
+    if (this.imageFiles.length + files.length > 10) {
+      this.imageError = 'Chỉ được chọn tối đa 10 ảnh';
+      return;
+    }
+
     files.forEach((file) => {
+      if (!file.type.startsWith('image/')) {
+        this.imageError = 'File phải là ảnh';
+        return;
+      }
+
       const reader = new FileReader();
+
       reader.onload = (e) => {
         this.imagePreviews.push(e.target?.result as string);
         this.imageFiles.push(file);
       };
+
       reader.readAsDataURL(file);
     });
+  }
+
+  onVideoSelect(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0];
+
+    if (!file) return;
+
+    if (!file.type.startsWith('video/')) {
+      this.videoError = 'File phải là video';
+      return;
+    }
+
+    if (file.size > 20 * 1024 * 1024) {
+      this.videoError = 'Video phải nhỏ hơn 20MB';
+      return;
+    }
+
+    this.videoFile = file;
+    this.videoPreview = URL.createObjectURL(file);
   }
 
   onImageDrop(event: DragEvent) {
@@ -167,7 +218,9 @@ export class PostRoomComponent implements OnInit {
 
   // ── Location ──────────────────────────────────────────────────
   loadCities() {
-    this.http.get<any[]>('/province-api/api/v1/p/').subscribe((data) => (this.cities = data));
+    this.locationService.getCities().subscribe((data) => {
+      this.cities = data;
+    });
   }
 
   openLocationModal() {
@@ -187,7 +240,7 @@ export class PostRoomComponent implements OnInit {
     this.selectedDistrict = null;
     this.selectedWard = null;
     this.openLocDropdown = null;
-    this.http.get<any>(`/province-api/api/v1/p/${city.code}?depth=2`).subscribe((data) => {
+    this.locationService.getDistricts(city.code).subscribe((data) => {
       this.districts = data.districts;
       this.wards = [];
     });
@@ -197,7 +250,7 @@ export class PostRoomComponent implements OnInit {
     this.selectedDistrict = district;
     this.selectedWard = null;
     this.openLocDropdown = null;
-    this.http.get<any>(`/province-api/api/v1/d/${district.code}?depth=2`).subscribe((data) => {
+    this.locationService.getWards(district.code).subscribe((data) => {
       this.wards = data.wards;
     });
   }
@@ -235,19 +288,40 @@ export class PostRoomComponent implements OnInit {
     this.fullAddress = parts.join(', ');
     this.closeLocationModal();
 
-    // Init map
-    if (isPlatformBrowser(this.platformId)) {
-      setTimeout(() => this.initMap(), 300);
-    }
+    setTimeout(() => {
+      this.initMap();
+    }, 200);
   }
 
   async initMap() {
-    if (this.map) return;
-    this.L = await import('leaflet');
-    this.map = this.L.map('postRoomMap').setView([21.0285, 105.8542], 14);
-    this.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors',
-    }).addTo(this.map);
+    if (!this.fullAddress) return;
+
+    mapboxgl.accessToken = this.MAPBOX_TOKEN;
+
+    if (!this.map) {
+      this.map = new mapboxgl.Map({
+        container: 'postRoomMap',
+        style: 'mapbox://styles/mapbox/streets-v12',
+        center: [105.8542, 21.0285],
+        zoom: 14,
+      });
+    }
+
+    const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(this.fullAddress)}.json?access_token=${this.MAPBOX_TOKEN}`;
+
+    this.http.get<any>(url).subscribe((res) => {
+      const feature = res.features?.[0];
+      if (!feature) return;
+
+      const [lng, lat] = feature.center;
+
+      this.map.flyTo({
+        center: [lng, lat],
+        zoom: 16,
+      });
+
+      new mapboxgl.Marker({ color: '#e11d48' }).setLngLat([lng, lat]).addTo(this.map);
+    });
   }
 
   // ── Submit ────────────────────────────────────────────────────
@@ -265,14 +339,27 @@ export class PostRoomComponent implements OnInit {
 
     try {
       // Upload images via POST /api/upload
-      const imageUrls: string[] = [];
-      for (const file of this.imageFiles) {
+      const mediaUrls: string[] = [];
+      const uploadTasks = this.imageFiles.map((file) => {
         const formData = new FormData();
         formData.append('file', file);
+
+        return firstValueFrom(this.http.post(`${environment.apiUrl}/upload`, formData));
+      });
+
+      const results: any[] = await Promise.all(uploadTasks);
+
+      results.forEach((r) => mediaUrls.push(r.url));
+
+      if (this.videoFile) {
+        const formData = new FormData();
+        formData.append('file', this.videoFile);
+
         const res: any = await firstValueFrom(
           this.http.post(`${environment.apiUrl}/upload`, formData),
         );
-        imageUrls.push(res.url);
+
+        mediaUrls.push(res.url);
       }
 
       const payload = {
@@ -283,7 +370,7 @@ export class PostRoomComponent implements OnInit {
         cityName: this.selectedCity?.name,
         districtName: this.selectedDistrict?.name,
         wardName: this.selectedWard?.name,
-        imageUrls,
+        mediaUrls,
         amenityIds: Array.from(this.selectedAmenityIds),
         customAmenities: this.customAmenities,
       };
