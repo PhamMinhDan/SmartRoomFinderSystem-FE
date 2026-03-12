@@ -10,6 +10,7 @@ import { PostSuccessComponent } from './pages/post-room/post-success/post-succes
 import { ManagePostsComponent } from './pages/manage-posts/manage-posts.component';
 import { ChatComponent } from './pages/chat/chat.component';
 import { RoomDetailComponent } from './pages/roomdetail/roomdetail.component';
+import { FavouritesComponent } from './pages/favourites/favourites.component';
 
 export const routes: Routes = [
   {
@@ -52,6 +53,7 @@ export const routes: Routes = [
     component: ManagePostsComponent,
     title: 'Quản lý tin đăng - RoomFinder.vn',
   },
+  { path: 'saved', component: FavouritesComponent, title: 'Tin đã lưu - RoomFinder.vn' },
 
   // ── Admin (lazy-loaded layout với child routes) ───────────────
   {
@@ -71,9 +73,7 @@ export const routes: Routes = [
         path: 'dashboard',
         title: 'Dashboard - RoomFinder Admin',
         loadComponent: () =>
-          import('./pages/admin/dashboard/dashboard.component').then(
-            (m) => m.DashboardComponent,
-          ),
+          import('./pages/admin/dashboard/dashboard.component').then((m) => m.DashboardComponent),
       },
       {
         path: 'pending',
@@ -95,17 +95,13 @@ export const routes: Routes = [
         path: 'all-posts',
         title: 'Tất cả tin - RoomFinder Admin',
         loadComponent: () =>
-          import('./pages/admin/all-posts/all-posts.component').then(
-            (m) => m.AllPostsComponent,
-          ),
+          import('./pages/admin/all-posts/all-posts.component').then((m) => m.AllPostsComponent),
       },
       {
         path: 'users',
         title: 'Người dùng - RoomFinder Admin',
         loadComponent: () =>
-          import('./pages/admin/users/users.component').then(
-            (m) => m.UsersComponent,
-          ),
+          import('./pages/admin/users/users.component').then((m) => m.UsersComponent),
       },
     ],
   },

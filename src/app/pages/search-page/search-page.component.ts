@@ -1,12 +1,16 @@
 // search-page.component.ts
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { LocationService } from '../../services/location.service';
+import { FavouriteService } from '../../services/favourites.service';
 
+import { ToastService } from '../../components/toast/toast.service';
+import { AuthService } from '../../services/auth.service';
 interface RoomImage {
   imageId: number;
   imageUrl: string;
@@ -33,6 +37,7 @@ interface Room {
   isActive: boolean;
   viewCount: number;
   totalReviews: number;
+  averageRating: number;
   landlordId: string;
   landlordName: string;
   landlordAvatar: string;
@@ -53,7 +58,7 @@ interface Room {
   imports: [CommonModule, FormsModule],
   templateUrl: './search-page.component.html',
 })
-export class SearchPageComponent implements OnInit {
+export class SearchPageComponent implements OnInit, OnDestroy {
   // ── View ─────────────────────────────────────────
   view: 'grid' | 'list' = 'grid';
 
@@ -81,11 +86,16 @@ export class SearchPageComponent implements OnInit {
   loading = false;
   hasSearched = false;
 
+  // ── Favourites ────────────────────────────────────
+  savedIds = new Set<number>();
+  togglingIds = new Set<number>(); // prevent double-click
+  private favSub?: Subscription;
+
+  // ── Location dropdowns ────────────────────────────
   cities: any[] = [];
   districts: any[] = [];
   cityDropdown = false;
   districtDropdown = false;
-
   citySearch = '';
   districtSearch = '';
 
@@ -117,6 +127,9 @@ export class SearchPageComponent implements OnInit {
     private http: HttpClient,
     private router: Router,
     private locationService: LocationService,
+    public favouriteService: FavouriteService,
+    public authService: AuthService,
+    private toastService: ToastService,
   ) {}
 
   ngOnInit() {
@@ -124,20 +137,56 @@ export class SearchPageComponent implements OnInit {
       this.cities = data;
     });
 
+    // Subscribe to saved IDs from the service
+    this.favSub = this.favouriteService.savedIds.subscribe((ids) => {
+      this.savedIds = ids;
+    });
+
+    // Load saved IDs if logged in
+    if (this.authService.isLoggedIn()) {
+      this.favouriteService.loadSavedIds();
+    }
+
     this.fetchRooms(new HttpParams());
   }
 
-  onCityChange() {
-    const city = this.cities.find((c) => c.name === this.city);
+  ngOnDestroy() {
+    this.favSub?.unsubscribe();
+  }
 
-    if (!city) return;
+  // ── Favourite toggle ──────────────────────────────
+  toggleFavourite(event: Event, roomId: number) {
+    event.stopPropagation();
 
-    this.locationService.getDistricts(city.code).subscribe((data) => {
-      this.districts = data.districts;
+    if (!this.authService.isLoggedIn()) {
+      this.toastService.show('Vui lòng đăng nhập để lưu tin', 'info');
+      return;
+    }
+
+    if (this.togglingIds.has(roomId)) return; // debounce
+    this.togglingIds.add(roomId);
+
+    this.favouriteService.toggle(roomId).subscribe({
+      next: (res) => {
+        const saved = res?.data?.saved ?? false;
+        this.toastService.show(
+          saved ? '❤️ Đã lưu vào tin yêu thích' : '🤍 Đã bỏ lưu tin',
+          saved ? 'success' : 'info',
+        );
+        this.togglingIds.delete(roomId);
+      },
+      error: () => {
+        this.toastService.show('Có lỗi xảy ra, thử lại sau', 'error');
+        this.togglingIds.delete(roomId);
+      },
     });
   }
 
-  // ── Core fetch (dùng chung) ───────────────────────
+  isSaved(roomId: number): boolean {
+    return this.savedIds.has(roomId);
+  }
+
+  // ── Core fetch ────────────────────────────────────
   private fetchRooms(filterParams: HttpParams) {
     this.loading = true;
     const params = filterParams
@@ -163,7 +212,6 @@ export class SearchPageComponent implements OnInit {
     });
   }
 
-  // ── Khi bấm "Áp dụng bộ lọc" ────────────────────
   search(resetPage = true) {
     if (resetPage) this.currentPage = 0;
 
@@ -217,6 +265,15 @@ export class SearchPageComponent implements OnInit {
     });
   }
 
+  // ── Filter helpers ────────────────────────────────
+  onCityChange() {
+    const city = this.cities.find((c) => c.name === this.city);
+    if (!city) return;
+    this.locationService.getDistricts(city.code).subscribe((data) => {
+      this.districts = data.districts;
+    });
+  }
+
   toggleAmenity(amenity: string) {
     const i = this.amenities.indexOf(amenity);
     if (i > -1) this.amenities.splice(i, 1);
@@ -242,6 +299,30 @@ export class SearchPageComponent implements OnInit {
     this.fetchRooms(new HttpParams());
   }
 
+  filteredCities() {
+    return this.cities.filter((c) => c.name.toLowerCase().includes(this.citySearch.toLowerCase()));
+  }
+
+  filteredDistricts() {
+    return this.districts.filter((d) =>
+      d.name.toLowerCase().includes(this.districtSearch.toLowerCase()),
+    );
+  }
+
+  selectCity(city: any) {
+    this.city = city.name;
+    this.cityDropdown = false;
+    this.district = '';
+    this.locationService.getDistricts(city.code).subscribe((res) => {
+      this.districts = res.districts;
+    });
+  }
+
+  selectDistrict(d: any) {
+    this.district = d.name;
+    this.districtDropdown = false;
+  }
+
   // ── Display helpers ───────────────────────────────
   formatPrice(price: number): string {
     if (price >= 1_000_000) {
@@ -258,26 +339,5 @@ export class SearchPageComponent implements OnInit {
       unfurnished: 'Không nội thất',
     };
     return map[level] || level || 'Chưa cập nhật';
-  }
-  filteredCities() {
-    return this.cities.filter((c) => c.name.toLowerCase().includes(this.citySearch.toLowerCase()));
-  }
-  filteredDistricts() {
-    return this.districts.filter((d) =>
-      d.name.toLowerCase().includes(this.districtSearch.toLowerCase()),
-    );
-  }
-  selectCity(city: any) {
-    this.city = city.name;
-    this.cityDropdown = false;
-    this.district = '';
-
-    this.locationService.getDistricts(city.code).subscribe((res) => {
-      this.districts = res.districts;
-    });
-  }
-  selectDistrict(d: any) {
-    this.district = d.name;
-    this.districtDropdown = false;
   }
 }
