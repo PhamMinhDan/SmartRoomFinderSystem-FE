@@ -6,6 +6,7 @@ import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../../services/auth.service';
+import { ToastService } from '../../components/toast/toast.service';
 
 interface RoomImage {
   imageUrl: string;
@@ -83,12 +84,27 @@ export class ManagePostsComponent implements OnInit, OnDestroy {
     { time: '10:00 AM', title: 'Tên tin đăng', guest: 'Tên khách hẹn' },
   ];
 
+  // Delete popup
+  showDeletePopup = false;
+  deleteRoomId: number | null = null;
+  deleteReason = '';
+  deleteOtherReason = '';
+
+  deleteReasons = [
+    'Đã cho thuê',
+    'Thông tin không còn đúng',
+    'Đăng nhầm',
+    'Không muốn cho thuê nữa',
+    'Khác',
+  ];
+
   private userSub!: Subscription;
 
   constructor(
     private http: HttpClient,
     private router: Router,
     private authService: AuthService,
+    private toastService: ToastService,
   ) {}
 
   ngOnInit() {
@@ -158,17 +174,37 @@ export class ManagePostsComponent implements OnInit, OnDestroy {
     this.filteredRooms = list;
   }
 
-  // ── Actions ───────────────────────────────────────
-  deleteRoom(id: number) {
-    if (!confirm('Bạn có chắc muốn xóa bài đăng này?')) return;
-    this.http.delete(`${environment.apiUrl}/rooms/${id}`).subscribe({
+  openDeletePopup(id: number) {
+    this.deleteRoomId = id;
+    this.deleteReason = '';
+    this.deleteOtherReason = '';
+    this.showDeletePopup = true;
+    this.openMenuId = null;
+  }
+
+  confirmDelete() {
+    if (!this.deleteReason) {
+      this.toastService.show('Vui lòng chọn lý do', 'warning');
+      return;
+    }
+
+    const reason = this.deleteReason === 'Khác' ? this.deleteOtherReason : this.deleteReason;
+
+    this.http.delete(`${environment.apiUrl}/rooms/${this.deleteRoomId}`).subscribe({
       next: () => {
-        this.rooms = this.rooms.filter((r) => r.roomId !== id);
+        this.rooms = this.rooms.filter((r) => r.roomId !== this.deleteRoomId);
+
         this.updateTabCounts();
         this.applyFilters();
+
+        this.toastService.show('Xóa bài đăng thành công', 'success');
+
+        this.showDeletePopup = false;
+      },
+      error: () => {
+        this.toastService.show('Không thể xóa bài đăng', 'error');
       },
     });
-    this.openMenuId = null;
   }
 
   editRoom(id: number) {
