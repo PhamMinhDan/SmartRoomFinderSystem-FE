@@ -176,7 +176,7 @@ export class ManagePostsComponent implements OnInit, OnDestroy {
   }
 
   viewRoom(id: number) {
-    this.router.navigate(['/room', id]);
+    this.router.navigate(['/room-detail', id]);
     this.openMenuId = null;
   }
 
