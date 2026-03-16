@@ -109,6 +109,11 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./pages/admin/users/users.component').then((m) => m.UsersComponent),
       },
+      {
+        path: 'room-detail/:id',
+        title: 'Chi tiết duyệt tin - RoomFinder Admin',
+        component: RoomDetailComponent,
+      },
     ],
   },
 

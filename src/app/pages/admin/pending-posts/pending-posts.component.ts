@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../../environments/environment';
+import { Router } from '@angular/router'; // ← Thêm import này
 
 type Tab = 'all' | 'suspicious' | 'cheap';
 
@@ -32,6 +33,7 @@ export class PendingPostsComponent implements OnInit {
   selectedTab = signal<Tab>('all');
   selectedPosts = signal<number[]>([]);
   loading = false;
+  processingBulk = false;
 
   // Toast
   toastMsg = '';
@@ -51,7 +53,10 @@ export class PendingPostsComponent implements OnInit {
   totalElements = 0;
   pageSize = 15;
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private router: Router, // ← Thêm Router vào constructor
+  ) {}
 
   ngOnInit(): void {
     this.loadRooms();
@@ -64,7 +69,7 @@ export class PendingPostsComponent implements OnInit {
       const res: any = await firstValueFrom(
         this.http.get(`${environment.apiUrl}/admin/rooms`, {
           params: { isApproved: false, page: this.currentPage, size: this.pageSize },
-        })
+        }),
       );
       const rooms = res.data.content;
       this.totalPages = res.data.totalPages;
@@ -94,13 +99,15 @@ export class PendingPostsComponent implements OnInit {
   }
 
   // Computed filters
-  suspiciousCount = computed(() => this.posts.filter(p => p.suspicious).length);
-  cheapCount = computed(() => this.posts.filter(p => p.priceRaw > 0 && p.priceRaw < 2_000_000).length);
+  suspiciousCount = computed(() => this.posts.filter((p) => p.suspicious).length);
+  cheapCount = computed(
+    () => this.posts.filter((p) => p.priceRaw > 0 && p.priceRaw < 2_000_000).length,
+  );
 
   filteredPosts = computed(() => {
     const tab = this.selectedTab();
-    if (tab === 'suspicious') return this.posts.filter(p => p.suspicious);
-    if (tab === 'cheap') return this.posts.filter(p => p.priceRaw > 0 && p.priceRaw < 2_000_000);
+    if (tab === 'suspicious') return this.posts.filter((p) => p.suspicious);
+    if (tab === 'cheap') return this.posts.filter((p) => p.priceRaw > 0 && p.priceRaw < 2_000_000);
     return this.posts;
   });
 
@@ -108,12 +115,36 @@ export class PendingPostsComponent implements OnInit {
   async approveRoom(roomId: number) {
     try {
       await firstValueFrom(
-        this.http.patch(`${environment.apiUrl}/admin/rooms/${roomId}/approve`, {})
+        this.http.patch(`${environment.apiUrl}/admin/rooms/${roomId}/approve`, {}),
       );
       this.showToast('Tin đã được duyệt!', 'success');
       this.loadRooms();
     } catch (err: any) {
       this.showToast(err?.error?.message || 'Duyệt thất bại', 'error');
+    }
+  }
+
+  // PATCH /admin/rooms/:id/approve (bulk)
+  async approveSelected() {
+    const ids = this.selectedPosts();
+    if (ids.length === 0 || this.processingBulk) return;
+
+    this.processingBulk = true;
+    try {
+      await Promise.all(
+        ids.map((roomId) =>
+          firstValueFrom(
+            this.http.patch(`${environment.apiUrl}/admin/rooms/${roomId}/approve`, {}),
+          ),
+        ),
+      );
+      this.selectedPosts.set([]);
+      this.showToast(`Đã duyệt ${ids.length} tin đăng`, 'success');
+      await this.loadRooms();
+    } catch (err: any) {
+      this.showToast(err?.error?.message || 'Duyệt hàng loạt thất bại', 'error');
+    } finally {
+      this.processingBulk = false;
     }
   }
 
@@ -130,16 +161,62 @@ export class PendingPostsComponent implements OnInit {
     this.rejectReason = '';
   }
 
+  // Open reject modal for selected posts
+  openRejectSelectedModal() {
+    const ids = this.selectedPosts();
+    if (ids.length === 0) return;
+    // Marker id=0 for bulk reject mode
+    this.rejectTargetId = 0;
+    this.rejectReason = '';
+    this.showRejectModal = true;
+  }
+
   // PATCH /admin/rooms/:id/reject
   async confirmReject() {
+    if (this.rejectTargetId === null) return;
+
+    // Bulk reject mode
+    if (this.rejectTargetId === 0) {
+      const ids = this.selectedPosts();
+      if (ids.length === 0 || this.processingBulk) {
+        this.closeRejectModal();
+        return;
+      }
+
+      this.processingBulk = true;
+      try {
+        await Promise.all(
+          ids.map((roomId) =>
+            firstValueFrom(
+              this.http.patch(
+                `${environment.apiUrl}/admin/rooms/${roomId}/reject`,
+                {},
+                { params: { reason: this.rejectReason || 'Không đạt yêu cầu' } },
+              ),
+            ),
+          ),
+        );
+        this.selectedPosts.set([]);
+        this.showToast(`Đã từ chối ${ids.length} tin đăng`, 'success');
+        await this.loadRooms();
+      } catch (err: any) {
+        this.showToast(err?.error?.message || 'Từ chối hàng loạt thất bại', 'error');
+      } finally {
+        this.processingBulk = false;
+        this.closeRejectModal();
+      }
+      return;
+    }
+
+    // Single reject mode
     if (!this.rejectTargetId) return;
     try {
       await firstValueFrom(
         this.http.patch(
           `${environment.apiUrl}/admin/rooms/${this.rejectTargetId}/reject`,
           {},
-          { params: { reason: this.rejectReason || 'Không đạt yêu cầu' } }
-        )
+          { params: { reason: this.rejectReason || 'Không đạt yêu cầu' } },
+        ),
       );
       this.showToast('Đã từ chối tin đăng', 'success');
       this.loadRooms();
@@ -169,8 +246,8 @@ export class PendingPostsComponent implements OnInit {
   }
 
   toggleSelect(id: number) {
-    this.selectedPosts.update(prev =>
-      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    this.selectedPosts.update((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
     );
   }
 
@@ -179,14 +256,13 @@ export class PendingPostsComponent implements OnInit {
     if (this.selectedPosts().length === filtered.length) {
       this.selectedPosts.set([]);
     } else {
-      this.selectedPosts.set(filtered.map(p => p.id));
+      this.selectedPosts.set(filtered.map((p) => p.id));
     }
   }
 
   isAllSelected(): boolean {
     return (
-      this.selectedPosts().length === this.filteredPosts().length &&
-      this.filteredPosts().length > 0
+      this.selectedPosts().length === this.filteredPosts().length && this.filteredPosts().length > 0
     );
   }
 
@@ -209,7 +285,12 @@ export class PendingPostsComponent implements OnInit {
 
   getInitials(name: string): string {
     if (!name) return '?';
-    return name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+    return name
+      .split(' ')
+      .map((w) => w[0])
+      .slice(0, 2)
+      .join('')
+      .toUpperCase();
   }
 
   showToast(msg: string, type: 'success' | 'error') {
@@ -217,5 +298,10 @@ export class PendingPostsComponent implements OnInit {
     this.toastType = type;
     clearTimeout(this.toastTimer);
     this.toastTimer = setTimeout(() => (this.toastMsg = ''), 3000);
+  }
+
+  // ── Xem chi tiết phòng trong cùng tab admin ───────────────────────────────────
+  openRoomDetailInNewTab(roomId: number) {
+    this.router.navigate(['/admin/room-detail', roomId]);
   }
 }

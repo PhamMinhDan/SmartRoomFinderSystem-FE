@@ -1,5 +1,4 @@
 <div class="page">
-
   <div class="page-header">
     <h1 class="page-title">Chờ duyệt</h1>
     <p class="page-breadcrumb">RoomFinder Admin &rsaquo; Chờ duyệt</p>
@@ -35,15 +34,36 @@
     <div class="bulk-bar">
       <span class="bulk-count">Đã chọn {{ selectedPosts().length }} tin</span>
       <div class="bulk-actions">
-        <button class="btn-bulk-approve">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22,4 12,14.01 9,11.01"/>
+        <button class="btn-bulk-approve" (click)="approveSelected()" [disabled]="processingBulk">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            width="16"
+            height="16"
+          >
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+            <polyline points="22,4 12,14.01 9,11.01" />
           </svg>
           Phê duyệt chọn
         </button>
-        <button class="btn-bulk-reject">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-            <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+        <button
+          class="btn-bulk-reject"
+          (click)="openRejectSelectedModal()"
+          [disabled]="processingBulk"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            width="16"
+            height="16"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <line x1="15" y1="9" x2="9" y2="15" />
+            <line x1="9" y1="9" x2="15" y2="15" />
           </svg>
           Từ chối chọn
         </button>
@@ -63,7 +83,6 @@
   <div class="posts-grid">
     @for (post of filteredPosts(); track post.id) {
       <div class="post-card" [class.selected]="isSelected(post.id)">
-
         <div class="card-img-wrap">
           <input
             type="checkbox"
@@ -74,9 +93,19 @@
           <img [src]="post.image" [alt]="post.title" class="card-img" />
           @if (post.suspicious) {
             <div class="badge-spam">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
-                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                width="12"
+                height="12"
+              >
+                <path
+                  d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
+                />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
               </svg>
               SPAM?
             </div>
@@ -100,28 +129,107 @@
           </div>
 
           <div class="card-actions">
-            <button class="btn-approve">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22,4 12,14.01 9,11.01"/>
+            <button class="btn-approve" (click)="approveRoom(post.roomId)">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                width="16"
+                height="16"
+              >
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                <polyline points="22,4 12,14.01 9,11.01" />
               </svg>
               Duyệt
             </button>
-            <button class="btn-reject">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+            <button class="btn-reject" (click)="openRejectModal(post.roomId)">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                width="16"
+                height="16"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="15" y1="9" x2="9" y2="15" />
+                <line x1="9" y1="9" x2="15" y2="15" />
               </svg>
               Từ chối
             </button>
-            <button class="btn-view">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+            <button
+              class="btn-view"
+              (click)="openRoomDetailInNewTab(post.roomId)"
+              title="Xem chi tiết tin đăng"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                width="16"
+                height="16"
+              >
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
               </svg>
             </button>
           </div>
         </div>
-
       </div>
     }
   </div>
 
+  <!-- Pagination -->
+  @if (totalPages > 1) {
+    <div class="pagination-wrap">
+      <button class="page-btn" [disabled]="currentPage === 0" (click)="changePage(currentPage - 1)">
+        ‹
+      </button>
+      @for (p of pageRange(); track p) {
+        <button class="page-btn" [class.page-active]="p === currentPage" (click)="changePage(p)">
+          {{ p + 1 }}
+        </button>
+      }
+      <button
+        class="page-btn"
+        [disabled]="currentPage === totalPages - 1"
+        (click)="changePage(currentPage + 1)"
+      >
+        ›
+      </button>
+    </div>
+  }
 </div>
+
+<!-- Reject Modal -->
+@if (showRejectModal) {
+  <div class="modal-overlay" (click)="closeRejectModal()">
+    <div class="modal-box" (click)="$event.stopPropagation()">
+      <h3 class="modal-title">Từ chối tin đăng</h3>
+      <p class="modal-desc">Vui lòng nhập lý do từ chối để thông báo tới người đăng tin.</p>
+      <textarea
+        class="modal-textarea"
+        [(ngModel)]="rejectReason"
+        rows="4"
+        placeholder="Lý do từ chối (ví dụ: Hình ảnh không rõ ràng, giá không hợp lý...)"
+      ></textarea>
+      <div class="modal-actions">
+        <button class="btn-modal-cancel" (click)="closeRejectModal()">Hủy</button>
+        <button class="btn-modal-confirm" (click)="confirmReject()">Xác nhận từ chối</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Toast -->
+@if (toastMsg) {
+  <div
+    class="toast"
+    [class.toast-success]="toastType === 'success'"
+    [class.toast-error]="toastType === 'error'"
+  >
+    {{ toastMsg }}
+  </div>
+}

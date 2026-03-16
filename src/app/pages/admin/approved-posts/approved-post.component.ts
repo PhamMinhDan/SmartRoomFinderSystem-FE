@@ -1,6 +1,7 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 
@@ -40,7 +41,10 @@ export class ApprovedPostsComponent implements OnInit {
   toastType: 'success' | 'error' = 'success';
   private toastTimer: any;
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {
     this.loadRooms();
@@ -78,6 +82,39 @@ export class ApprovedPostsComponent implements OnInit {
       this.showToast(err?.error?.message || 'Lỗi tải dữ liệu', 'error');
     } finally {
       this.loading = false;
+    }
+  }
+
+  // Xem chi tiết phòng
+  viewRoomDetail(roomId: number) {
+    this.router.navigate(['/room', roomId]);
+  }
+
+  // PATCH /admin/rooms/:id/active (Ẩn phòng)
+  async hideRoom(roomId: number) {
+    try {
+      await firstValueFrom(
+        this.http.patch(`${environment.apiUrl}/admin/rooms/${roomId}/active`, { isActive: false })
+      );
+      this.showToast('Đã ẩn phòng', 'success');
+      this.loadRooms();
+    } catch (err: any) {
+      this.showToast(err?.error?.message || 'Ẩn phòng thất bại', 'error');
+    }
+  }
+
+  // DELETE /admin/rooms/:id
+  async deleteRoom(roomId: number) {
+    if (!confirm('Bạn có chắc chắn muốn xóa phòng này?')) return;
+    
+    try {
+      await firstValueFrom(
+        this.http.delete(`${environment.apiUrl}/admin/rooms/${roomId}`)
+      );
+      this.showToast('Đã xóa phòng', 'success');
+      this.loadRooms();
+    } catch (err: any) {
+      this.showToast(err?.error?.message || 'Xóa phòng thất bại', 'error');
     }
   }
 

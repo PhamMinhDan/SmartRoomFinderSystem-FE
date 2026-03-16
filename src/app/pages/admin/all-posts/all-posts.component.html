@@ -19,7 +19,7 @@
         class="search-input"
       />
     </div>
-    <button class="export-btn">
+    <button class="export-btn" (click)="exportToCSV()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
         <polyline points="7,10 12,15 17,10"/>
@@ -46,6 +46,20 @@
           </tr>
         </thead>
         <tbody>
+          @if (loading) {
+            <tr>
+              <td colspan="8" style="text-align: center; padding: 3rem; color: #6b7280;">
+                Đang tải dữ liệu...
+              </td>
+            </tr>
+          }
+          @if (!loading && filteredPosts().length === 0) {
+            <tr>
+              <td colspan="8" style="text-align: center; padding: 3rem; color: #6b7280;">
+                Không tìm thấy tin đăng nào
+              </td>
+            </tr>
+          }
           @for (post of filteredPosts(); track post.id) {
             <tr>
               <td>
@@ -73,7 +87,7 @@
                 </div>
               </td>
               <td>
-                <button class="detail-btn">Chi tiết</button>
+                <button class="detail-btn" (click)="viewRoomDetail(post.id)">Chi tiết</button>
               </td>
             </tr>
           }
@@ -84,15 +98,45 @@
     <!-- Pagination -->
     <div class="table-footer">
       <span class="table-info">
-        Hiển thị 1-{{ filteredPosts().length }} trong tổng số {{ allPosts.length }} tin
+        Hiển thị {{ filteredPosts().length > 0 ? '1' : '0' }}-{{ filteredPosts().length }} trong tổng số {{ totalElements }} tin
       </span>
       <div class="pagination">
-        <button class="page-btn">Trước</button>
-        <button class="page-btn active">1</button>
-        <button class="page-btn">2</button>
-        <button class="page-btn">Sau</button>
+        <button 
+          class="page-btn" 
+          [disabled]="currentPage === 0"
+          (click)="changePage(currentPage - 1)"
+        >
+          Trước
+        </button>
+        @for (page of pageRange(); track page) {
+          <button 
+            class="page-btn" 
+            [class.active]="page === currentPage"
+            (click)="changePage(page)"
+          >
+            {{ page + 1 }}
+          </button>
+        }
+        <button 
+          class="page-btn"
+          [disabled]="currentPage >= totalPages - 1"
+          (click)="changePage(currentPage + 1)"
+        >
+          Sau
+        </button>
       </div>
     </div>
   </div>
+
+  <!-- Toast notification -->
+  @if (toastMsg) {
+    <div 
+      class="toast"
+      [class.toast-success]="toastType === 'success'"
+      [class.toast-error]="toastType === 'error'"
+    >
+      {{ toastMsg }}
+    </div>
+  }
 
 </div>

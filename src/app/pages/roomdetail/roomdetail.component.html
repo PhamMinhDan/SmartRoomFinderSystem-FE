@@ -832,6 +832,68 @@ room-detail.component.html
            RIGHT COLUMN — Sidebar
       ══════════════════════════════════════════════════ -->
       <div class="w-full lg:w-72 flex-shrink-0 space-y-4">
+        <!-- ── ADMIN: Review panel ───────────────────────── -->
+        <div
+          *ngIf="isAdmin"
+          class="bg-white rounded-2xl p-5 shadow-sm border border-amber-200 sticky top-24"
+        >
+          <div class="flex items-center gap-2 mb-4">
+            <span class="w-1 h-5 bg-amber-400 rounded-full inline-block"></span>
+            <h3 class="text-sm font-bold text-slate-700">Kiểm duyệt tin đăng</h3>
+          </div>
+
+          <!-- Approval status badge -->
+          <div class="mb-3">
+            <span
+              *ngIf="!room.isApproved"
+              class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-600 border border-amber-200"
+            >⏳ Chờ duyệt</span>
+            <span
+              *ngIf="room.isApproved"
+              class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200"
+            >✅ Đã duyệt</span>
+          </div>
+
+          <!-- Quick info for admin -->
+          <div class="space-y-1 mb-4 text-xs text-slate-500">
+            <p>👤 Chủ trọ: <span class="font-medium text-slate-700">{{ room.landlordName }}</span></p>
+            <p>💰 Giá: <span class="font-medium text-slate-700">{{ formatPrice(room.pricePerMonth) }}</span></p>
+            <p>📅 Ngày đăng: <span class="font-medium text-slate-700">{{ formatDate(room.createdAt) }}</span></p>
+          </div>
+
+          <!-- Admin action buttons (only visible for pending rooms) -->
+          <div *ngIf="!room.isApproved" class="space-y-2">
+            <button
+              (click)="adminApproveRoom()"
+              [disabled]="isApproving"
+              class="w-full py-2.5 bg-[#00C897] text-white rounded-xl font-semibold text-sm hover:bg-[#00a87f] transition flex items-center justify-center gap-2 disabled:opacity-60"
+            >
+              <svg *ngIf="isApproving" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+              </svg>
+              <svg *ngIf="!isApproving" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+              </svg>
+              Phê duyệt tin
+            </button>
+            <button
+              (click)="openAdminRejectModal()"
+              class="w-full py-2.5 border-2 border-red-300 text-red-500 rounded-xl font-semibold text-sm hover:bg-red-50 transition flex items-center justify-center gap-2"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" stroke-width="2"/>
+                <line x1="15" y1="9" x2="9" y2="15"/>
+                <line x1="9" y1="9" x2="15" y2="15"/>
+              </svg>
+              Từ chối tin
+            </button>
+          </div>
+          <p *ngIf="room.isApproved" class="text-xs text-slate-400 text-center py-1">
+            Tin đăng này đã được phê duyệt.
+          </p>
+        </div>
+
         <!-- ── RENTER: Landlord card ──────────────────────── -->
         <div
           *ngIf="isRenter"
@@ -1073,4 +1135,41 @@ room-detail.component.html
     <!-- end flex row -->
   </div>
   <!-- end main content -->
+</div>
+
+<!-- ── Admin Reject Modal ────────────────────────────── -->
+<div
+  *ngIf="showAdminRejectModal"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+  (click)="closeAdminRejectModal()"
+>
+  <div
+    class="bg-white rounded-2xl p-6 w-full max-w-md mx-4 shadow-xl"
+    (click)="$event.stopPropagation()"
+  >
+    <h3 class="text-lg font-bold text-slate-800 mb-1">Từ chối tin đăng</h3>
+    <p class="text-sm text-slate-500 mb-4">
+      Vui lòng nhập lý do từ chối để thông báo cho người đăng.
+    </p>
+    <textarea
+      [(ngModel)]="adminRejectReason"
+      rows="4"
+      class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-300 focus:border-red-300"
+      placeholder="Lý do từ chối (ví dụ: Hình ảnh không rõ ràng, nội dung không phù hợp...)"
+    ></textarea>
+    <div class="flex gap-3 mt-4">
+      <button
+        (click)="closeAdminRejectModal()"
+        class="flex-1 py-2.5 border border-slate-200 text-slate-600 rounded-xl text-sm font-semibold hover:bg-slate-50 transition"
+      >
+        Hủy
+      </button>
+      <button
+        (click)="adminConfirmReject()"
+        class="flex-1 py-2.5 bg-red-500 text-white rounded-xl text-sm font-semibold hover:bg-red-600 transition"
+      >
+        Xác nhận từ chối
+      </button>
+    </div>
+  </div>
 </div>

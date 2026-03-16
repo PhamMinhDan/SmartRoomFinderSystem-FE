@@ -2,6 +2,7 @@ import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 
@@ -42,7 +43,10 @@ export class AllPostsComponent implements OnInit {
   toastType: 'success' | 'error' = 'success';
   private toastTimer: any;
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {
     this.loadRooms();
@@ -90,6 +94,44 @@ export class AllPostsComponent implements OnInit {
         p.poster.toLowerCase().includes(term)
     );
   });
+
+  // Điều hướng đến trang chi tiết phòng
+  viewRoomDetail(roomId: number) {
+    this.router.navigate(['/room', roomId]);
+  }
+
+  // Export CSV
+  exportToCSV() {
+    const data = this.filteredPosts();
+    if (data.length === 0) {
+      this.showToast('Không có dữ liệu để xuất', 'error');
+      return;
+    }
+
+    const headers = ['ID', 'Tiêu đề', 'Giá', 'Địa chỉ', 'Người đăng', 'Trạng thái', 'Ngày đăng', 'Lượt xem'];
+    const rows = data.map(p => [
+      p.id,
+      p.title,
+      p.price,
+      p.address,
+      p.poster,
+      this.getStatusLabel(p.status),
+      p.date,
+      p.views
+    ]);
+
+    const csv = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `danh-sach-phong-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    this.showToast('Đã xuất file CSV thành công', 'success');
+  }
 
   // Pagination
   changePage(page: number) {

@@ -117,6 +117,12 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   updatingStatus = false;
   openReviewMenu: number | null = null;
 
+  // Admin actions
+  isApproving = false;
+  showAdminRejectModal = false;
+  adminRejectReason = '';
+  isAdminReviewMode = false;
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -131,6 +137,8 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       this.currentRole = user.role_name || '';
       this.currentUserId = user.user_id || '';
     }
+
+    this.isAdminReviewMode = this.router.url.includes('/admin/room-detail/');
 
     this.route.params.subscribe((params) => {
       const id = params['id'];
@@ -161,20 +169,32 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     this.reviews = [];
     this.reviewPage = 0;
 
-    this.http.get<any>(`${environment.apiUrl}/rooms/${id}`).subscribe({
+    const roomDetailApi = this.isAdminReviewMode
+      ? `${environment.apiUrl}/admin/room-detail/${id}`
+      : `${environment.apiUrl}/rooms/${id}`;
+
+    this.http.get<any>(roomDetailApi).subscribe({
       next: (res) => {
         this.room = res?.data ?? res;
-        this.http.post(`${environment.apiUrl}/rooms/${id}/view`, {}).subscribe({
-          next: (view: any) => {
-            if (this.room) {
-              this.room.viewCount = view?.data ?? this.room.viewCount + 1;
-            }
-          },
-        });
+
+        // Do not increase public view counter when admin is reviewing pending posts.
+        if (!this.isAdminReviewMode) {
+          this.http.post(`${environment.apiUrl}/rooms/${id}/view`, {}).subscribe({
+            next: (view: any) => {
+              if (this.room) {
+                this.room.viewCount = view?.data ?? this.room.viewCount + 1;
+              }
+            },
+          });
+        }
+
         this.loading = false;
-        this.loadReviews(true);
-        this.loadSimilarRooms();
-        setTimeout(() => this.initMap(), 200);
+
+        if (!this.isAdminReviewMode) {
+          this.loadReviews(true);
+          this.loadSimilarRooms();
+          setTimeout(() => this.initMap(), 200);
+        }
       },
       error: () => {
         this.error = 'Không tìm thấy phòng hoặc đã xảy ra lỗi.';
@@ -480,6 +500,58 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     return !!this.currentUserId && this.room?.landlordId === this.currentUserId;
   }
 
+  get isAdmin(): boolean {
+    return this.currentRole?.toUpperCase() === 'ADMIN';
+  }
+
+  // ── Admin Actions ─────────────────────────────────────
+  adminApproveRoom() {
+    if (!this.room) return;
+    this.isApproving = true;
+    this.http
+      .patch(`${environment.apiUrl}/admin/rooms/${this.room.roomId}/approve`, {})
+      .subscribe({
+        next: () => {
+          this.room!.isApproved = true;
+          this.isApproving = false;
+        },
+        error: () => {
+          this.isApproving = false;
+          alert('Duyệt thất bại. Vui lòng thử lại.');
+        },
+      });
+  }
+
+  openAdminRejectModal() {
+    this.adminRejectReason = '';
+    this.showAdminRejectModal = true;
+  }
+
+  closeAdminRejectModal() {
+    this.showAdminRejectModal = false;
+    this.adminRejectReason = '';
+  }
+
+  adminConfirmReject() {
+    if (!this.room) return;
+    this.http
+      .patch(
+        `${environment.apiUrl}/admin/rooms/${this.room.roomId}/reject`,
+        {},
+        { params: { reason: this.adminRejectReason || 'Không đạt yêu cầu' } },
+      )
+      .subscribe({
+        next: () => {
+          this.closeAdminRejectModal();
+          alert('Đã từ chối tin đăng.');
+          window.close();
+        },
+        error: () => {
+          alert('Từ chối thất bại. Vui lòng thử lại.');
+        },
+      });
+  }
+
   // ── Actions ───────────────────────────────────────────
   contactLandlord() {
     if (!this.room) return;
@@ -522,6 +594,10 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   goBack() {
+    if (this.isAdminReviewMode) {
+      this.router.navigate(['/admin/pending']);
+      return;
+    }
     this.router.navigate(['/search']);
   }
 
