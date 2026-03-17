@@ -90,10 +90,22 @@ export class PostRoomComponent implements OnInit {
       title: ['', [Validators.required, Validators.maxLength(255)]],
       description: [''],
 
-      pricePerMonth: [null, [Validators.required, Validators.min(1)]],
-      depositAmount: [null, [Validators.min(0)]],
+      pricePerMonth: [
+        null,
+        [
+          Validators.required,
+          Validators.min(1000),
+          Validators.max(1000000000), // max 1 tỷ
+          Validators.pattern(/^\d{1,10}$/), // tối đa 10 số
+        ],
+      ],
 
-      areaSize: [null, [Validators.min(1)]],
+      depositAmount: [
+        null,
+        [Validators.min(0), Validators.max(1000000000), Validators.pattern(/^\d{1,10}$/)],
+      ],
+
+      areaSize: [null, [Validators.required, Validators.min(1), Validators.max(1000)]],
 
       roomType: ['', Validators.required],
 
@@ -109,6 +121,10 @@ export class PostRoomComponent implements OnInit {
 
     this.loadCities();
     this.loadAmenities();
+
+    this.roomForm.valueChanges.subscribe(() => {
+      this.errorMsg = '';
+    });
   }
 
   // ── Amenities ─────────────────────────────────────────────────
@@ -329,8 +345,10 @@ export class PostRoomComponent implements OnInit {
     this.submitted = true;
     this.roomForm.markAllAsTouched();
 
-    if (this.roomForm.invalid || !this.fullAddress || this.imageFiles.length === 0) {
-      this.errorMsg = 'Vui lòng điền đầy đủ thông tin bắt buộc';
+    const error = this.validateForm();
+
+    if (error) {
+      this.errorMsg = error;
       return;
     }
 
@@ -380,9 +398,55 @@ export class PostRoomComponent implements OnInit {
         queryParams: { posted: 'success' },
       });
     } catch (err: any) {
-      this.errorMsg = err?.error?.message || 'Đăng tin thất bại. Vui lòng thử lại.';
+      console.error('Submit error:', err);
+
+      if (err?.error?.message) {
+        this.errorMsg = err.error.message;
+      } else if (err?.error?.errors) {
+        this.errorMsg = Object.values(err.error.errors).join(', ');
+      } else {
+        this.errorMsg = 'Dữ liệu không hợp lệ (có thể số quá lớn)';
+      }
     } finally {
       this.submitLoading = false;
     }
+  }
+
+  validateForm(): string {
+    const f = this.roomForm;
+
+    if (f.get('title')?.invalid) {
+      return 'Vui lòng nhập tiêu đề';
+    }
+
+    if (f.get('pricePerMonth')?.errors?.['required']) {
+      return 'Vui lòng nhập giá thuê';
+    }
+
+    if (f.get('pricePerMonth')?.errors?.['max']) {
+      return 'Giá thuê quá lớn (tối đa 1 tỷ)';
+    }
+
+    if (f.get('pricePerMonth')?.errors?.['pattern']) {
+      return 'Giá thuê không hợp lệ';
+    }
+
+    if (f.get('depositAmount')?.errors?.['max']) {
+      return 'Tiền cọc quá lớn';
+    }
+
+    if (f.get('areaSize')?.errors?.['min']) {
+      return 'Diện tích phải lớn hơn 0';
+    }
+
+    if (!this.fullAddress) {
+      return 'Vui lòng chọn địa chỉ';
+    }
+
+    if (this.imageFiles.length === 0) {
+      return 'Vui lòng chọn ít nhất 1 ảnh';
+    }
+
+    return '';
   }
 }

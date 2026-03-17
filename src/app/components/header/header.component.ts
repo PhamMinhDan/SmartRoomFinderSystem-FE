@@ -1,12 +1,14 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { RouterModule, Router } from '@angular/router';
 import { LoginModalComponent } from '../login-modal/login-modal.component';
 import { AuthService, UserResponse } from '../../services/auth.service';
 import { ConfirmLogoutModalComponent } from '../logout/confirm-logout-modal.component';
 import { UserAvatarDropdownComponent } from '../user-avatar-dropdown/user-avatar-dropdown.component';
 import { Subscription } from 'rxjs';
-
+import { environment } from '../../../environments/environment';
+import { ChatService } from '../../services/chat.service';
 @Component({
   selector: 'app-header',
   standalone: true,
@@ -15,7 +17,7 @@ import { Subscription } from 'rxjs';
     RouterModule,
     LoginModalComponent,
     ConfirmLogoutModalComponent,
-    UserAvatarDropdownComponent,   // ← shared dropdown
+    UserAvatarDropdownComponent, // ← shared dropdown
   ],
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.css'],
@@ -26,16 +28,33 @@ export class HeaderComponent implements OnInit, OnDestroy {
   isConfirmLogoutOpen = false;
   currentUser: UserResponse | null = null;
 
+  notifications: any[] = [];
+  unreadCount = 0;
+  showNotification = false;
+
   private userSub?: Subscription;
 
   constructor(
     private authService: AuthService,
     private router: Router,
+    private http: HttpClient,
+    private chatService: ChatService,
   ) {}
 
   ngOnInit(): void {
     this.userSub = this.authService.currentUser.subscribe((user) => {
       this.currentUser = user;
+      if (user) {
+        this.chatService.connect(user.user_id);
+
+        this.chatService.notification$.subscribe((noti) => {
+          this.notifications.unshift(noti);
+
+          if (!this.showNotification) {
+            this.unreadCount++;
+          }
+        });
+      }
     });
 
     if (this.authService.isLoggedIn() && !this.currentUser) {
@@ -88,7 +107,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
       return;
     }
     this.router.navigate(
-      this.currentUser.identity_verified ? ['/post-room'] : ['/identity-verify']
+      this.currentUser.identity_verified ? ['/post-room'] : ['/identity-verify'],
     );
   }
 
@@ -98,5 +117,50 @@ export class HeaderComponent implements OnInit, OnDestroy {
       return;
     }
     this.router.navigate(['/chat']);
+  }
+  loadNotifications() {
+    if (!this.currentUser?.user_id) return;
+    this.http
+      .get(`${environment.apiUrl}/notifications?userId=${this.currentUser.user_id}`)
+      .subscribe((res: any) => (this.notifications = res));
+
+    this.http
+      .get(`${environment.apiUrl}/notifications/unread-count?userId=${this.currentUser.user_id}`)
+      .subscribe((res: any) => (this.unreadCount = res));
+  }
+
+  toggleNotification() {
+    this.showNotification = !this.showNotification;
+
+    if (this.showNotification) {
+      this.loadNotifications();
+      this.http
+        .patch(
+          `${environment.apiUrl}/notifications/read-all?userId=${this.currentUser?.user_id}`,
+          {},
+        )
+        .subscribe(() => {
+          this.unreadCount = 0;
+          this.notifications = this.notifications.map((n) => ({
+            ...n,
+            isRead: true,
+          }));
+        });
+    }
+  }
+
+  goToNotification(n: any) {
+    this.showNotification = false;
+
+    if (n.redirectUrl) {
+      this.router.navigateByUrl(n.redirectUrl);
+    }
+  }
+
+  @HostListener('document:click', ['$event'])
+  handleClickOutside(event: any) {
+    if (!event.target.closest('.relative')) {
+      this.showNotification = false;
+    }
   }
 }
