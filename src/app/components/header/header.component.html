@@ -37,17 +37,30 @@
       </a>
 
       <div class="relative">
-        <input type="text" placeholder="Tìm kiếm..."
-          class="w-56 pl-10 pr-4 py-2 rounded-full border border-gray-300 focus:border-[#00C897] focus:ring-2 focus:ring-[#00C897]/20 outline-none transition-all text-sm"/>
-        <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2"
-          fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M21 21l-4.35-4.35M16 10a6 6 0 11-12 0 6 6 0 0112 0z"/>
+        <input
+          type="text"
+          placeholder="Tìm kiếm..."
+          class="w-56 pl-10 pr-4 py-2 rounded-full border border-gray-300 focus:border-[#00C897] focus:ring-2 focus:ring-[#00C897]/20 outline-none transition-all text-sm"
+        />
+        <svg
+          class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M21 21l-4.35-4.35M16 10a6 6 0 11-12 0 6 6 0 0112 0z"
+          />
         </svg>
       </div>
 
-      <button (click)="goToPostRoom()"
-        class="bg-[#FF6B6B] text-white px-6 py-2.5 rounded-full hover:bg-[#FF5E3A] transition-colors font-bold cursor-pointer">
+      <button
+        (click)="goToPostRoom()"
+        class="bg-[#FF6B6B] text-white px-6 py-2.5 rounded-full hover:bg-[#FF5E3A] transition-colors font-bold cursor-pointer"
+      >
         Đăng tin
       </button>
     </div>
@@ -55,36 +68,96 @@
     <!-- Auth desktop -->
     <div class="hidden lg:flex items-center space-x-4">
       <!-- Chưa đăng nhập -->
-      <button *ngIf="!currentUser" (click)="openLoginModal()"
-        class="border-2 border-[#00C897] text-[#00C897] px-6 py-2.5 rounded-lg font-medium hover:bg-[#00C897]/10 transition-colors cursor-pointer">
+      <button
+        *ngIf="!currentUser"
+        (click)="openLoginModal()"
+        class="border-2 border-[#00C897] text-[#00C897] px-6 py-2.5 rounded-lg font-medium hover:bg-[#00C897]/10 transition-colors cursor-pointer"
+      >
         Đăng nhập
       </button>
 
       <!-- Đã đăng nhập -->
       <div *ngIf="currentUser" class="flex items-center space-x-2">
         <div class="flex items-center space-x-1 mr-2">
-          <button routerLink="/saved"
+          <button
+            routerLink="/saved"
             class="p-2 text-gray-500 hover:text-[#FF6B6B] hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
-            title="Tin đã lưu">
+            title="Tin đã lưu"
+          >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+              />
             </svg>
           </button>
-          <button class="p-2 text-gray-500 hover:text-[#00C897] hover:bg-gray-100 rounded-lg transition-colors cursor-pointer" title="Thông báo">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-            </svg>
-          </button>
+          <div class="relative">
+            <button
+              (click)="toggleNotification()"
+              class="p-2 text-gray-500 hover:text-[#00C897] hover:bg-gray-100 rounded-lg transition-colors cursor-pointer relative"
+              title="Thông báo"
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                />
+              </svg>
+
+              <!-- 🔴 BADGE -->
+              <span
+                *ngIf="unreadCount > 0"
+                class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full leading-none"
+              >
+                {{ unreadCount > 99 ? '99+' : unreadCount }}
+              </span>
+            </button>
+
+            <!-- 🔔 DROPDOWN -->
+            <div
+              *ngIf="showNotification"
+              class="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] z-50 overflow-hidden"
+            >
+              <div class="p-3 border-b font-semibold text-gray-700">Thông báo</div>
+
+              <!-- LIST -->
+              <div *ngIf="notifications.length > 0; else empty">
+                <div
+                  *ngFor="let n of notifications"
+                  (click)="goToNotification(n)"
+                  class="p-3 hover:bg-gray-100 cursor-pointer border-b last:border-none"
+                >
+                  <div class="text-sm font-medium text-gray-800">
+                    {{ n.title }}
+                  </div>
+                  <div class="text-xs text-gray-500 mt-1">
+                    {{ n.content }}
+                  </div>
+                </div>
+              </div>
+
+              <!-- EMPTY -->
+              <ng-template #empty>
+                <div class="p-4 text-center text-gray-400 text-sm">Không có thông báo</div>
+              </ng-template>
+            </div>
+          </div>
           <button
             routerLink="/chat"
             routerLinkActive="active-link"
             class="nav-btn flex items-center space-x-1 px-3 py-2 border border-gray-300 text-gray-700 hover:border-[#00C897] hover:text-[#00C897] rounded-lg transition-colors cursor-pointer text-sm font-medium"
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+              />
             </svg>
             <span>Liên hệ</span>
           </button>
@@ -104,17 +177,82 @@
 
     <!-- Mobile: tim + chuông + hamburger -->
     <div class="lg:hidden flex items-center space-x-1">
-      <button *ngIf="currentUser" routerLink="/saved"
-        class="p-2 text-gray-500 hover:text-[#FF6B6B] rounded-lg transition-colors cursor-pointer">
+      <!-- ❤️ Saved -->
+      <button
+        *ngIf="currentUser"
+        routerLink="/saved"
+        class="p-2 text-gray-500 hover:text-[#FF6B6B] rounded-lg transition-colors cursor-pointer"
+      >
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+          />
         </svg>
       </button>
-      <button (click)="toggleMenu()"
-        class="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer">
+
+      <!-- 🔔 NOTIFICATION -->
+      <div class="relative" *ngIf="currentUser">
+        <button
+          (click)="toggleNotification()"
+          class="p-2 text-gray-500 hover:text-[#00C897] rounded-lg transition-colors relative"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+            />
+          </svg>
+
+          <!-- badge -->
+          <span
+            *ngIf="unreadCount > 0"
+            class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full"
+          >
+            {{ unreadCount > 99 ? '99+' : unreadCount }}
+          </span>
+        </button>
+
+        <!-- dropdown -->
+        <div
+          *ngIf="showNotification"
+          class="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] z-50 overflow-hidden"
+        >
+          <div class="p-3 border-b font-semibold text-gray-700">Thông báo</div>
+
+          <div *ngIf="notifications.length > 0; else empty">
+            <div
+              *ngFor="let n of notifications"
+              (click)="goToNotification(n)"
+              class="p-3 hover:bg-gray-100 cursor-pointer border-b last:border-none"
+            >
+              <div class="text-sm font-medium">{{ n.title }}</div>
+              <div class="text-xs text-gray-500">{{ n.content }}</div>
+            </div>
+          </div>
+
+          <ng-template #empty>
+            <div class="p-4 text-center text-gray-400 text-sm">Không có thông báo</div>
+          </ng-template>
+        </div>
+      </div>
+
+      <!-- ☰ MENU -->
+      <button
+        (click)="toggleMenu()"
+        class="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+      >
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M4 6h16M4 12h16M4 18h16"
+          />
         </svg>
       </button>
     </div>
@@ -140,12 +278,17 @@
         Blog
       </a>
       <div class="pt-2 border-t border-gray-100">
-        <button *ngIf="!currentUser" (click)="openLoginModal(); toggleMenu()"
-          class="w-full border-2 border-[#00C897] text-[#00C897] px-4 py-2 rounded-lg font-medium hover:bg-[#00C897]/10 transition-colors">
+        <button
+          *ngIf="!currentUser"
+          (click)="openLoginModal(); toggleMenu()"
+          class="w-full border-2 border-[#00C897] text-[#00C897] px-4 py-2 rounded-lg font-medium hover:bg-[#00C897]/10 transition-colors"
+        >
           Đăng nhập
         </button>
-        <button (click)="goToPostRoom(); toggleMenu()"
-          class="w-full mt-2 bg-[#FF6B6B] text-white px-4 py-2 rounded-full hover:bg-[#FF5E3A] transition-colors font-bold">
+        <button
+          (click)="goToPostRoom(); toggleMenu()"
+          class="w-full mt-2 bg-[#FF6B6B] text-white px-4 py-2 rounded-full hover:bg-[#FF5E3A] transition-colors font-bold"
+        >
           Đăng tin
         </button>
       </div>
@@ -168,7 +311,9 @@
 </header>
 
 <!-- ===== MOBILE BOTTOM NAV BAR ===== -->
-<nav class="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.08)]">
+<nav
+  class="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.08)]"
+>
   <div class="flex items-center justify-around px-2 py-1">
     <!-- Trang chủ -->
     <a
@@ -178,8 +323,12 @@
       class="nav-link flex flex-col items-center py-2 px-3 text-gray-500 hover:text-[#00C897] transition-colors cursor-pointer min-w-0"
     >
       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-          d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+        />
       </svg>
       <span class="text-xs font-medium mt-0.5">Trang chủ</span>
     </a>
@@ -191,17 +340,28 @@
       class="flex flex-col items-center py-2 px-3 text-gray-500 hover:text-[#00C897] transition-colors cursor-pointer min-w-0"
     >
       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-          d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a2 2 0 012-2z"/>
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a2 2 0 012-2z"
+        />
       </svg>
       <span class="text-xs font-medium mt-0.5">Quản lý tin</span>
     </a>
 
     <!-- Đăng tin nổi bật -->
     <div class="flex flex-col items-center -mt-5 cursor-pointer" (click)="goToPostRoom()">
-      <button class="w-14 h-14 bg-[#FF6B6B] rounded-full flex items-center justify-center shadow-lg hover:bg-[#FF5E3A] transition-colors border-4 border-white cursor-pointer">
+      <button
+        class="w-14 h-14 bg-[#FF6B6B] rounded-full flex items-center justify-center shadow-lg hover:bg-[#FF5E3A] transition-colors border-4 border-white cursor-pointer"
+      >
         <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2.5"
+            d="M12 4v16m8-8H4"
+          />
         </svg>
       </button>
       <span class="text-xs font-medium text-gray-600 mt-1">Đăng tin</span>
@@ -213,19 +373,30 @@
       class="flex flex-col items-center py-2 px-3 text-gray-500 hover:text-[#00C897] transition-colors cursor-pointer min-w-0"
     >
       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-          d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+        />
       </svg>
       <span class="text-xs font-medium mt-0.5">Liên hệ</span>
     </button>
 
     <!-- Tài khoản: dùng shared dropdown, size="sm" -->
     <div class="flex flex-col items-center py-2 px-3 cursor-pointer min-w-0">
-      <button *ngIf="!currentUser" (click)="openLoginModal()"
-        class="flex flex-col items-center text-gray-500 hover:text-[#00C897] transition-colors">
+      <button
+        *ngIf="!currentUser"
+        (click)="openLoginModal()"
+        class="flex flex-col items-center text-gray-500 hover:text-[#00C897] transition-colors"
+      >
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+          />
         </svg>
         <span class="text-xs font-medium mt-0.5">Tài khoản</span>
       </button>

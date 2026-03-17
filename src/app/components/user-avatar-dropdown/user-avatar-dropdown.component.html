@@ -1,5 +1,4 @@
 <div class="dropdown-root" *ngIf="currentUser">
-
   <!-- ── Trigger: Avatar button ─────────────────────────────────── -->
   <button
     class="avatar-trigger"
@@ -25,7 +24,6 @@
 
   <!-- ── Dropdown panel ─────────────────────────────────────────── -->
   <div *ngIf="isOpen" class="dropdown-panel">
-
     <!-- Header: mini profile card -->
     <div class="panel-header">
       <!-- Gradient banner -->
@@ -55,19 +53,27 @@
           <div class="panel-badges">
             <span *ngIf="isAdmin" class="badge badge-admin">
               <svg viewBox="0 0 24 24" fill="currentColor" width="9" height="9">
-                <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
+                <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" />
               </svg>
               ADMIN
             </span>
             <span *ngIf="currentUser.identity_verified" class="badge badge-verified">
               <svg viewBox="0 0 20 20" fill="currentColor" width="9" height="9">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                <path
+                  fill-rule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                  clip-rule="evenodd"
+                />
               </svg>
               Đã xác minh
             </span>
             <span *ngIf="!currentUser.identity_verified && !isAdmin" class="badge badge-unverified">
               <svg viewBox="0 0 20 20" fill="currentColor" width="9" height="9">
-                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                <path
+                  fill-rule="evenodd"
+                  d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                  clip-rule="evenodd"
+                />
               </svg>
               Chưa xác minh
             </span>
@@ -78,59 +84,91 @@
 
     <!-- Navigation items -->
     <div class="panel-body">
-
       <!-- Thông tin cá nhân -->
-      <a
-        routerLink="/profile"
-        (click)="close()"
-        class="panel-item"
-      >
+      <a routerLink="/profile" (click)="close()" class="panel-item">
         <span class="item-icon icon-profile">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-            <circle cx="12" cy="7" r="4"/>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            width="15"
+            height="15"
+          >
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
           </svg>
         </span>
         <span class="item-label">Thông tin cá nhân</span>
-        <svg class="item-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13">
-          <polyline points="9 18 15 12 9 6"/>
+        <svg
+          class="item-arrow"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          width="13"
+          height="13"
+        >
+          <polyline points="9 18 15 12 9 6" />
         </svg>
       </a>
 
       <!-- Tin đăng của tôi (chỉ user thường) -->
-      <a
-        *ngIf="!isAdmin"
-        routerLink="/my-posts"
-        (click)="close()"
-        class="panel-item"
-      >
+      <a *ngIf="!isAdmin" routerLink="/my-posts" (click)="close()" class="panel-item">
         <span class="item-icon icon-posts">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
-            <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
-            <rect x="9" y="3" width="6" height="4" rx="1" ry="1"/>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            width="15"
+            height="15"
+          >
+            <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" />
+            <rect x="9" y="3" width="6" height="4" rx="1" ry="1" />
           </svg>
         </span>
         <span class="item-label">Tin đăng của tôi</span>
-        <svg class="item-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13">
-          <polyline points="9 18 15 12 9 6"/>
+        <svg
+          class="item-arrow"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          width="13"
+          height="13"
+        >
+          <polyline points="9 18 15 12 9 6" />
         </svg>
       </a>
 
       <!-- Tin đã lưu (chỉ user thường) -->
-      <a
-        *ngIf="!isAdmin"
-        routerLink="/saved"
-        (click)="close()"
-        class="panel-item"
-      >
+      <a *ngIf="!isAdmin" routerLink="/saved" (click)="close()" class="panel-item">
         <span class="item-icon icon-saved">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
-            <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            width="15"
+            height="15"
+          >
+            <path
+              d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+            />
           </svg>
         </span>
         <span class="item-label">Tin đã lưu</span>
-        <svg class="item-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13">
-          <polyline points="9 18 15 12 9 6"/>
+        <svg
+          class="item-arrow"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          width="13"
+          height="13"
+        >
+          <polyline points="9 18 15 12 9 6" />
         </svg>
       </a>
 
@@ -142,8 +180,17 @@
         class="panel-item panel-item-verify"
       >
         <span class="item-icon icon-verify">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
-            <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            width="15"
+            height="15"
+          >
+            <path
+              d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+            />
           </svg>
         </span>
         <span class="item-label">Xác minh danh tính</span>
@@ -151,24 +198,35 @@
       </a>
 
       <!-- Dashboard (chỉ admin) -->
-      <a
-        *ngIf="isAdmin"
-        routerLink="/admin/dashboard"
-        (click)="close()"
-        class="panel-item"
-      >
+      <a *ngIf="isAdmin" routerLink="/admin/dashboard" (click)="close()" class="panel-item">
         <span class="item-icon icon-dashboard">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
-            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
-            <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            width="15"
+            height="15"
+          >
+            <rect x="3" y="3" width="7" height="7" />
+            <rect x="14" y="3" width="7" height="7" />
+            <rect x="14" y="14" width="7" height="7" />
+            <rect x="3" y="14" width="7" height="7" />
           </svg>
         </span>
         <span class="item-label">Admin Dashboard</span>
-        <svg class="item-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13">
-          <polyline points="9 18 15 12 9 6"/>
+        <svg
+          class="item-arrow"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          width="13"
+          height="13"
+        >
+          <polyline points="9 18 15 12 9 6" />
         </svg>
       </a>
-
     </div>
 
     <!-- Divider -->
@@ -178,15 +236,21 @@
     <div class="panel-footer">
       <button class="logout-btn" (click)="logout()">
         <span class="item-icon icon-logout">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-            <polyline points="16,17 21,12 16,7"/>
-            <line x1="21" y1="12" x2="9" y2="12"/>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            width="15"
+            height="15"
+          >
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16,17 21,12 16,7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
           </svg>
         </span>
         <span class="item-label">Đăng xuất</span>
       </button>
     </div>
-
   </div>
 </div>

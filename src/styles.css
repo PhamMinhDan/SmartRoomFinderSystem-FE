@@ -5,6 +5,10 @@
   font-family: 'Poppins', sans-serif;
 }
 
+body {
+  padding-bottom: 70px; /* chiều cao nav dưới */
+}
+
 /* ===== marker phòng ===== */
 
 .pulse-marker {

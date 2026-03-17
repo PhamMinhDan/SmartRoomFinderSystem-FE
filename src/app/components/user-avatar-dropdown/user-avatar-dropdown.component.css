@@ -432,3 +432,11 @@
     background: rgba(255, 107, 107, 0.12);
   }
 }
+
+@media (max-width: 1024px) {
+  .dropdown-panel {
+    top: auto !important;
+    bottom: calc(100% + 0.75rem); /* nằm trên avatar */
+    right: 0;
+  }
+}

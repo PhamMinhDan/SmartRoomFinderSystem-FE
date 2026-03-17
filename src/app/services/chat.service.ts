@@ -30,13 +30,8 @@ export class ChatService {
   private _connected = false;
   private connectedUserId = '';
 
-  /**
-   * Stream nhận TẤT CẢ tin nhắn liên quan đến mình:
-   *   - type='MESSAGE': tin người khác gửi đến
-   *   - type='ECHO': echo tin mình gửi (đồng bộ tab khác)
-   * Component tự lọc theo type và senderId/receiverId.
-   */
   readonly message$ = new Subject<ChatMessagePayload>();
+  readonly notification$ = new Subject<any>();
 
   /** Read receipt */
   readonly readReceipt$ = new Subject<ChatMessagePayload>();
@@ -65,6 +60,14 @@ export class ChatService {
           } else {
             this.message$.next(data);
           }
+        });
+
+        this.client.subscribe(`/topic/notification.${userId}`, (msg: IMessage) => {
+          const data = JSON.parse(msg.body);
+
+          console.log('[Notification]', data);
+
+          this.notification$.next(data);
         });
       },
 
