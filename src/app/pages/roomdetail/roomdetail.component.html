@@ -1,4 +1,3 @@
-room-detail.component.html
 <div class="min-h-screen bg-gray-50 pt-10">
   <!-- ── Loading ──────────────────────────────────────── -->
   <div *ngIf="loading" class="flex flex-col items-center justify-center py-40 gap-4">
@@ -45,9 +44,7 @@ room-detail.component.html
       <div class="flex-1 min-w-0 space-y-4">
         <!-- ── Image Gallery ─────────────────────────────── -->
         <div class="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
-          <!-- Main image -->
           <div class="relative aspect-[16/9] bg-gray-100 group">
-            <!-- VIDEO -->
             <video
               *ngIf="isVideo(primaryImage)"
               [src]="primaryImage"
@@ -56,10 +53,8 @@ room-detail.component.html
               muted
               class="w-full h-full object-cover"
             ></video>
-
-            <!-- IMAGE -->
             <img
-              *ngIf="!isVideo(primaryImage)"
+              *ngIf="!isVideo(primaryImage) && primaryImage"
               [src]="primaryImage"
               class="w-full h-full object-cover"
             />
@@ -83,8 +78,6 @@ room-detail.component.html
                 />
               </svg>
             </div>
-
-            <!-- Nav arrows -->
             <button
               *ngIf="room.images.length > 1"
               (click)="prevImage()"
@@ -113,16 +106,12 @@ room-detail.component.html
                 />
               </svg>
             </button>
-
-            <!-- Image count badge -->
             <div
               *ngIf="room.images.length > 1"
               class="absolute bottom-3 right-3 bg-black/50 text-white text-xs px-2.5 py-1 rounded-full"
             >
               {{ currentImageIndex + 1 }} / {{ room.images.length }}
             </div>
-
-            <!-- Status badge -->
             <span
               class="absolute top-3 left-3 text-xs font-semibold px-2.5 py-1 rounded-full border"
               [ngClass]="getStatusClass(room.availabilityStatus)"
@@ -130,8 +119,6 @@ room-detail.component.html
               {{ getStatusLabel(room.availabilityStatus) }}
             </span>
           </div>
-
-          <!-- Thumbnails -->
           <div *ngIf="room.images.length > 1" class="flex gap-2 p-3 overflow-x-auto">
             <button
               *ngFor="let img of room.images; let i = index"
@@ -148,8 +135,6 @@ room-detail.component.html
                 [src]="img.imageUrl"
                 class="w-full h-full object-cover"
               ></video>
-
-              <!-- thumbnail image -->
               <img
                 *ngIf="!isVideo(img.imageUrl)"
                 [src]="img.imageUrl"
@@ -178,12 +163,10 @@ room-detail.component.html
               </svg>
             </button>
           </div>
-
-          <!-- Price + area row -->
           <div class="flex flex-wrap items-center gap-3 mb-3">
-            <span class="text-2xl font-extrabold text-[#00C897]">
-              {{ formatPrice(room.pricePerMonth) }}
-            </span>
+            <span class="text-2xl font-extrabold text-[#00C897]">{{
+              formatPrice(room.pricePerMonth)
+            }}</span>
             <span
               *ngIf="room.areaSize"
               class="text-sm text-slate-500 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200"
@@ -197,8 +180,6 @@ room-detail.component.html
               🏠 {{ formatRoomType(room.roomType) }}
             </span>
           </div>
-
-          <!-- Address -->
           <div class="flex items-start gap-2 text-slate-600 mb-3">
             <svg
               class="w-4 h-4 mt-0.5 flex-shrink-0 text-[#00C897]"
@@ -224,14 +205,16 @@ room-detail.component.html
               {{ room.cityName }}</span
             >
           </div>
-
-          <!-- Rating + views + time -->
           <div class="flex flex-wrap items-center gap-3 text-sm text-slate-500">
-            <div *ngIf="room.totalReviews && room.totalReviews > 0" class="flex items-center gap-1">
+            <div
+              *ngIf="room.totalReviews && room.totalReviews > 0"
+              (click)="scrollToReviews()"
+              class="flex items-center gap-1 cursor-pointer hover:text-[#00C897] transition"
+            >
               <span class="text-amber-400 text-base">★</span>
-              <span class="font-semibold text-slate-700">{{
-                room.averageRating?.toFixed(1) || '—'
-              }}</span>
+              <span class="font-semibold text-slate-700">
+                {{ room.averageRating?.toFixed(1) || '—' }}
+              </span>
               <span>({{ room.totalReviews }} đánh giá)</span>
             </div>
             <div class="flex items-center gap-1">
@@ -267,7 +250,6 @@ room-detail.component.html
             <span class="w-1 h-5 bg-[#00C897] rounded-full inline-block"></span>
             Thông tin chi tiết
           </h2>
-
           <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <div class="bg-slate-50 rounded-xl p-3 border border-slate-100">
               <p class="text-xs text-slate-400 mb-1">Diện tích</p>
@@ -302,11 +284,7 @@ room-detail.component.html
             <div class="bg-slate-50 rounded-xl p-3 border border-slate-100">
               <p class="text-xs text-slate-400 mb-1">Nhận phòng từ</p>
               <p class="text-[14px] font-semibold text-slate-700">
-                {{
-                  room.availableFrom
-                    ? formatDate(room.availableFrom)
-                    : 'Liên hệ để biết thêm thông tin'
-                }}
+                {{ room.availableFrom ? formatDate(room.availableFrom) : 'Liên hệ' }}
               </p>
             </div>
           </div>
@@ -325,8 +303,6 @@ room-detail.component.html
             {{ room.description }}
           </p>
           <p *ngIf="!room.description" class="text-slate-400 text-sm italic">Chưa có mô tả.</p>
-
-          <!-- Phone reveal — RENTER only -->
           <div
             *ngIf="isRenter"
             class="mt-4 p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between"
@@ -373,119 +349,138 @@ room-detail.component.html
               *ngFor="let amenity of room.amenities"
               class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 text-sm font-medium rounded-lg border border-emerald-200"
             >
-              <span *ngIf="amenity.iconUrl">
-                <img [src]="amenity.iconUrl" class="w-4 h-4" alt="" />
-              </span>
+              <img *ngIf="amenity.iconUrl" [src]="amenity.iconUrl" class="w-4 h-4" alt="" />
               {{ amenity.amenityName }}
             </span>
           </div>
         </div>
 
-        <!-- ── Xem trên bản đồ ────────────────────────────── -->
+        <!-- ── Bản đồ ──────────────────────────────────────── -->
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <div class="px-5 pt-5 pb-3">
             <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
               <span class="w-1 h-5 bg-[#00C897] rounded-full inline-block"></span>
               Xem trên bản đồ
-              <span *ngIf="isRenter" class="text-xs text-slate-400 font-normal ml-1">
-                (đường đi từ vị trí của bạn)
-              </span>
+              <span *ngIf="isRenter" class="text-xs text-slate-400 font-normal ml-1"
+                >(đường đi từ vị trí của bạn)</span
+              >
             </h2>
           </div>
-
-          <!-- legend -->
           <div *ngIf="isRenter" class="flex items-center gap-4 px-5 pb-3 text-xs text-slate-500">
-            <span class="flex items-center gap-1.5">
-              <span class="w-3 h-3 rounded-full bg-blue-500 inline-block"></span>
-              Vị trí của bạn
-            </span>
-
-            <span class="flex items-center gap-1.5">
-              <span class="w-3 h-3 rounded-full bg-red-500 inline-block"></span>
-              Vị trí phòng trọ
-            </span>
-
-            <span class="flex items-center gap-1.5">
-              <span class="w-6 h-0.5 bg-[#00C897] inline-block"></span>
-              Đường đi
-            </span>
+            <span class="flex items-center gap-1.5"
+              ><span class="w-3 h-3 rounded-full bg-blue-500 inline-block"></span>Vị trí của
+              bạn</span
+            >
+            <span class="flex items-center gap-1.5"
+              ><span class="w-3 h-3 rounded-full bg-red-500 inline-block"></span>Vị trí phòng
+              trọ</span
+            >
+            <span class="flex items-center gap-1.5"
+              ><span class="w-6 h-0.5 bg-[#00C897] inline-block"></span>Đường đi</span
+            >
           </div>
-
-          <!-- map -->
           <div id="roomDetailMap" class="w-full h-72 sm:h-96"></div>
         </div>
 
-        <!-- ── Đánh giá & Bình luận ─────────────────────── -->
-        <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <!-- Header with average rating summary -->
-          <div class="flex items-center justify-between mb-4">
-            <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
-              <span class="w-1 h-5 bg-[#00C897] rounded-full inline-block"></span>
-              Đánh giá ({{ room.totalReviews || 0 }})
-            </h2>
-            <div
-              *ngIf="room.totalReviews && room.totalReviews > 0"
-              class="flex items-center gap-1.5"
-            >
-              <span class="text-2xl font-extrabold text-slate-800">{{
-                room.averageRating?.toFixed(1)
-              }}</span>
-              <div class="flex flex-col items-start">
-                <div class="flex text-amber-400 text-sm leading-none">
-                  <ng-container *ngFor="let s of getStarArray(room.averageRating || 0)">
+        <!-- ══════════════════════════════════════════════════
+             ĐÁNH GIÁ & AN TOÀN CỘNG ĐỒNG
+        ══════════════════════════════════════════════════ -->
+        <div id="reviewSection" class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+          <h2 class="text-base font-bold text-slate-800 mb-5 flex items-center gap-2">
+            <span class="w-1 h-5 bg-[#00C897] rounded-full inline-block"></span>
+            Đánh giá & an toàn cộng đồng
+          </h2>
+
+          <!-- ── Rating Overview ─────────────────────────── -->
+          <div class="flex gap-5 mb-5 p-4 bg-slate-50 rounded-xl border border-slate-100">
+            <!-- Big score -->
+            <div class="flex flex-col items-center justify-center min-w-[80px]">
+              <span class="text-5xl font-black text-slate-800 leading-none">
+                {{ room.averageRating ? room.averageRating.toFixed(1) : '—' }}
+              </span>
+              <div class="flex gap-1 mt-1.5">
+                <ng-container *ngFor="let s of getStarArray(room.averageRating || 0)">
+                  <div class="relative w-4 h-4">
                     <svg
-                      *ngIf="s === 'full'"
-                      class="w-4 h-4 text-amber-400"
+                      class="w-4 h-4 text-slate-200 absolute"
                       fill="currentColor"
                       viewBox="0 0 20 20"
                     >
-                      <path
-                        d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
-                      />
+                      <path d="M9.049 2.927c..." />
                     </svg>
-                    <svg *ngIf="s === 'half'" class="w-4 h-4" viewBox="0 0 20 20">
-                      <defs>
-                        <clipPath id="half-clip-hdr">
-                          <rect x="0" y="0" width="10" height="20" />
-                        </clipPath>
-                      </defs>
-                      <path
-                        d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
-                        fill="#e2e8f0"
-                      />
-                      <path
-                        d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
-                        fill="#fbbf24"
-                        clip-path="url(#half-clip-hdr)"
-                      />
-                    </svg>
-                    <svg
-                      *ngIf="s === 'empty'"
-                      class="w-4 h-4 text-slate-200"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
-                      />
-                    </svg>
-                  </ng-container>
+
+                    <div class="absolute top-0 left-0 overflow-hidden" [style.width.%]="s * 100">
+                      <svg class="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c..." />
+                      </svg>
+                    </div>
+                  </div>
+                </ng-container>
+              </div>
+              <span class="text-xs text-slate-400 mt-1">{{ room.totalReviews || 0 }} đánh giá</span>
+            </div>
+
+            <!-- Rating bars -->
+            <div class="flex-1 space-y-2">
+              <div *ngFor="let bar of ratingBars" class="flex items-center gap-2">
+                <span class="text-xs text-slate-500 w-3 text-right flex-shrink-0">{{
+                  bar.star
+                }}</span>
+                <svg
+                  class="w-3 h-3 text-amber-400 flex-shrink-0"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
+                  />
+                </svg>
+                <div class="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                  <div
+                    class="h-full bg-amber-400 rounded-full transition-all duration-500"
+                    [style.width.%]="bar.percent"
+                  ></div>
                 </div>
-                <span class="text-xs text-slate-400">{{ room.totalReviews }} đánh giá</span>
+                <span class="text-xs text-slate-400 w-5 text-right flex-shrink-0">{{
+                  bar.count
+                }}</span>
               </div>
             </div>
           </div>
 
-          <!-- Reviews list -->
+          <!-- ── Filter tabs ─────────────────────────────── -->
+          <div class="flex flex-wrap gap-2 mb-5">
+            <button
+              *ngFor="let f of reviewFilters"
+              (click)="setReviewFilter(f.key)"
+              class="px-3 py-1.5 rounded-full text-xs font-medium border transition"
+              [ngClass]="
+                activeReviewFilter === f.key
+                  ? 'bg-[#00C897] text-white border-[#00C897]'
+                  : 'bg-white text-slate-600 border-slate-200 hover:border-[#00C897] hover:text-[#00C897]'
+              "
+            >
+              <span *ngIf="['1', '2', '3', '4', '5'].includes(f.key)">
+                {{ f.label }} ({{ ratingStats[+f.key] || 0 }})
+              </span>
+
+              <span *ngIf="!['1', '2', '3', '4', '5'].includes(f.key)">
+                {{ f.label }}
+              </span>
+            </button>
+          </div>
+
+          <!-- ── Review list ─────────────────────────────── -->
           <div
-            *ngIf="reviews.length === 0 && !reviewsLoading"
-            class="text-center py-6 text-slate-400 text-sm"
+            *ngIf="filteredReviews.length === 0 && !reviewsLoading"
+            class="text-center py-8 text-slate-400 text-sm"
           >
             Chưa có đánh giá nào. Hãy là người đầu tiên!
           </div>
 
           <div class="space-y-4 mb-5">
-            <div *ngFor="let r of reviews" class="flex gap-3">
+            <div *ngFor="let r of filteredReviews" class="flex gap-3">
+              <!-- Avatar -->
               <div
                 class="w-9 h-9 rounded-full flex-shrink-0 overflow-hidden bg-gradient-to-br from-[#00C897] to-emerald-600 flex items-center justify-center text-white text-sm font-bold"
               >
@@ -496,7 +491,6 @@ room-detail.component.html
                 <div class="flex items-center justify-between mb-1">
                   <div class="flex items-center gap-2">
                     <span class="font-semibold text-slate-800 text-sm">{{ r.userName }}</span>
-                    <!-- Numeric rating badge -->
                     <span
                       class="inline-flex items-center gap-0.5 bg-amber-50 border border-amber-200 text-amber-600 text-xs font-bold px-2 py-0.5 rounded-full"
                     >
@@ -510,12 +504,10 @@ room-detail.component.html
                     >
                       ⋯
                     </button>
-
                     <div
                       *ngIf="openReviewMenu === r.reviewId"
                       class="absolute right-0 mt-1 w-36 bg-white border border-gray-200 rounded-lg shadow-lg z-10"
                     >
-                      <!-- Nếu là bình luận của mình -->
                       <button
                         *ngIf="r.userId === currentUserId"
                         (click)="deleteReview(r.reviewId)"
@@ -523,8 +515,6 @@ room-detail.component.html
                       >
                         Xóa bình luận
                       </button>
-
-                      <!-- Nếu là người khác -->
                       <button
                         *ngIf="r.userId !== currentUserId"
                         (click)="reportReview(r.reviewId)"
@@ -535,218 +525,236 @@ room-detail.component.html
                     </div>
                   </div>
                 </div>
-                <!-- Star display -->
-                <div class="flex mb-1">
+                <!-- Stars -->
+                <div class="flex mb-1.5">
                   <ng-container *ngFor="let s of getStarArray(r.rating)">
-                    <svg
-                      *ngIf="s === 'full'"
-                      class="w-3.5 h-3.5 text-amber-400"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
-                      />
-                    </svg>
-                    <svg *ngIf="s === 'half'" class="w-3.5 h-3.5" viewBox="0 0 20 20">
-                      <defs>
-                        <clipPath id="half-clip-item">
-                          <rect x="0" y="0" width="10" height="20" />
-                        </clipPath>
-                      </defs>
-                      <path
-                        d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
-                        fill="#e2e8f0"
-                      />
-                      <path
-                        d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
-                        fill="#fbbf24"
-                        clip-path="url(#half-clip-item)"
-                      />
-                    </svg>
-                    <svg
-                      *ngIf="s === 'empty'"
-                      class="w-3.5 h-3.5 text-slate-200"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
-                      />
-                    </svg>
+                    <div class="relative w-4 h-4">
+                      <!-- nền -->
+                      <svg
+                        class="w-4 h-4 text-slate-200 absolute"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
+                        />
+                      </svg>
+
+                      <!-- fill -->
+                      <div class="absolute top-0 left-0 overflow-hidden" [style.width.%]="s * 100">
+                        <svg class="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                          <path
+                            d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
+                          />
+                        </svg>
+                      </div>
+                    </div>
                   </ng-container>
                 </div>
-                <p *ngIf="r.comment" class="text-slate-600 text-sm">{{ r.comment }}</p>
-                <p *ngIf="!r.comment" class="text-slate-400 text-xs italic">Không có nhận xét.</p>
+                <p *ngIf="r.comment" class="text-slate-600 text-sm mb-2">{{ r.comment }}</p>
+                <p *ngIf="!r.comment" class="text-slate-400 text-xs italic mb-2">
+                  Không có nhận xét.
+                </p>
+                <!-- Review images -->
+                <div
+                  *ngIf="r.imageUrls && r.imageUrls.length > 0"
+                  class="flex gap-2 flex-wrap mt-1 mb-2"
+                >
+                  <button
+                    *ngFor="let imgUrl of r.imageUrls"
+                    (click)="openLightbox(imgUrl)"
+                    class="w-20 h-20 rounded-lg overflow-hidden border border-slate-200 flex-shrink-0 hover:opacity-90 transition ring-0 hover:ring-2 hover:ring-[#00C897]"
+                  >
+                    <img [src]="imgUrl" class="w-full h-full object-cover" />
+                  </button>
+                </div>
+                <p class="text-xs text-slate-400">{{ formatRelativeTime(r.createdAt) }}</p>
               </div>
             </div>
           </div>
 
           <!-- Load more -->
-          <div *ngIf="reviewPage + 1 < reviewTotalPages" class="flex justify-center mb-4">
+          <div *ngIf="reviewTotalPages > 1" class="flex justify-center gap-2 mt-4">
             <button
-              (click)="loadMoreReviews()"
-              [disabled]="reviewsLoading"
-              class="px-4 py-1.5 text-sm text-[#00C897] border border-[#00C897] rounded-xl hover:bg-emerald-50 transition font-medium"
+              *ngFor="let i of pages"
+              (click)="changePage(i)"
+              class="px-3 py-1 rounded-lg border text-sm transition"
+              [ngClass]="
+                reviewPage === i
+                  ? 'bg-[#00C897] text-white border-[#00C897]'
+                  : 'bg-white text-gray-600 hover:border-[#00C897]'
+              "
             >
-              {{ reviewsLoading ? 'Đang tải...' : 'Xem thêm đánh giá' }}
+              {{ i + 1 }}
             </button>
           </div>
 
-          <!-- Comment + rating input -->
-          <div class="flex gap-2 items-center">
-            <div
-              class="w-9 h-9 rounded-full flex-shrink-0 overflow-hidden bg-gradient-to-br from-[#00C897] to-emerald-600 flex items-center justify-center text-white text-sm font-bold"
-            >
-              <img
-                *ngIf="authService.currentUserValue?.avatar_url"
-                [src]="authService.currentUserValue?.avatar_url"
-                class="w-full h-full object-cover"
-              />
-              <span *ngIf="!authService.currentUserValue?.avatar_url">
-                {{ authService.currentUserValue?.full_name?.charAt(0)?.toUpperCase() || '?' }}
-              </span>
+          <!-- ── Write Review Form (RENTER only, not own room) ── -->
+          <div *ngIf="isRenter && !isMyRoom" class="border-t border-slate-100 pt-5">
+            <h3 class="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
+              <span class="w-1 h-4 bg-[#00C897] rounded-full inline-block"></span>
+              Bình luận
+            </h3>
+
+            <!-- Star selector -->
+            <div class="mb-2">
+              <p class="text-xs text-slate-500 mb-2">Số sao</p>
+
+              <div class="flex items-center gap-3">
+                <div class="flex gap-1">
+                  <button
+                    *ngFor="let star of [1, 2, 3, 4, 5]"
+                    (click)="selectRating(star)"
+                    (mouseenter)="setHoverRating(star)"
+                    (mouseleave)="clearHoverRating()"
+                    class="text-2xl transition hover:scale-110"
+                    [class.text-amber-400]="getDisplayRating(star)"
+                    [class.text-slate-300]="!getDisplayRating(star)"
+                  >
+                    ★
+                  </button>
+                </div>
+
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  max="5"
+                  [(ngModel)]="pendingRating"
+                  (input)="onRatingInput()"
+                  class="w-10 px-2 py-1 border rounded text-center text-sm focus:border-[#00C897] outline-none"
+                />
+
+                <span class="text-sm text-gray-500">/5</span>
+              </div>
             </div>
-            <div class="flex-1 flex gap-2 items-center">
+
+            <!-- Comment input -->
+            <div class="mb-3 mt-3">
+              <p class="text-xs text-slate-500 mb-2">Đánh giá</p>
               <input
                 [(ngModel)]="commentText"
                 type="text"
-                placeholder="Viết nhận xét..."
-                class="flex-1 px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#00C897]/30 focus:border-[#00C897]"
-                (keyup.enter)="submitComment()"
+                placeholder="Chia sẻ trải nghiệm của bạn..."
+                class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#00C897]/30 focus:border-[#00C897]"
               />
-              <!-- Inline star rating input -->
-              <div class="flex items-center gap-0.5 flex-shrink-0 hidden sm:flex">
-                <button
-                  *ngFor="let star of [1, 2, 3, 4, 5]"
-                  (click)="selectRating(star)"
-                  (mouseenter)="setHoverRating(star)"
-                  (mouseleave)="clearHoverRating()"
-                  class="text-xl transition-transform hover:scale-125"
-                  [class.text-amber-400]="getDisplayRating(star)"
-                  [class.text-slate-200]="!getDisplayRating(star)"
+            </div>
+
+            <!-- Image upload (max 3) -->
+            <div class="mb-4">
+              <p class="text-xs text-slate-500 mb-2">
+                Thêm ảnh <span class="text-slate-400">(tối đa 3 ảnh)</span>
+              </p>
+              <div class="flex gap-2 flex-wrap">
+                <!-- Uploaded image previews -->
+                <div
+                  *ngFor="let img of reviewImagePreviews; let i = index"
+                  class="relative w-20 h-20 rounded-xl overflow-hidden border-2 border-slate-200 flex-shrink-0 bg-slate-100"
                 >
-                  ★
-                </button>
-              </div>
-              <button
-                (click)="submitComment()"
-                class="w-9 h-9 bg-[#00C897] text-white rounded-xl flex items-center justify-center hover:bg-[#00a87f] transition flex-shrink-0"
-              >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                  <img [src]="img" class="w-full h-full object-cover" />
+                  <!-- Upload spinner -->
+                  <div
+                    *ngIf="reviewImageUploading[i]"
+                    class="absolute inset-0 bg-black/40 flex items-center justify-center"
+                  >
+                    <svg class="w-5 h-5 text-white animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle
+                        class="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        stroke-width="4"
+                      />
+                      <path
+                        class="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                      />
+                    </svg>
+                  </div>
+                  <!-- Remove button -->
+                  <button
+                    *ngIf="!reviewImageUploading[i]"
+                    (click)="removeReviewImage(i)"
+                    class="absolute top-0.5 right-0.5 w-5 h-5 bg-black/60 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-500 transition leading-none"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <!-- Add image button -->
+                <label
+                  *ngIf="reviewImagePreviews.length < 3"
+                  class="w-20 h-20 rounded-xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center cursor-pointer hover:border-[#00C897] hover:bg-emerald-50 transition flex-shrink-0"
+                >
+                  <svg
+                    class="w-6 h-6 text-slate-400 mb-0.5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                    />
+                  </svg>
+                  <span class="text-[10px] text-slate-400">Thêm ảnh</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    class="hidden"
+                    (change)="onReviewImagesSelected($event)"
                   />
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- ── Rating Confirmation Popup ─────────────────── -->
-        <div
-          *ngIf="showRatingPopup"
-          class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
-          (click)="cancelRatingPopup()"
-        >
-          <div
-            class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6"
-            (click)="$event.stopPropagation()"
-          >
-            <h3 class="text-base font-bold text-slate-800 mb-1">Xác nhận đánh giá</h3>
-            <p class="text-sm text-slate-500 mb-5">Chọn số sao và gửi nhận xét của bạn</p>
-
-            <!-- Big star selector -->
-            <div class="flex justify-center gap-2 mb-3">
-              <button
-                *ngFor="let star of [1, 2, 3, 4, 5]"
-                (click)="selectRating(star)"
-                (mouseenter)="setHoverRating(star)"
-                (mouseleave)="clearHoverRating()"
-                class="text-4xl transition-transform hover:scale-125"
-                [class.text-amber-400]="getDisplayRating(star)"
-                [class.text-slate-200]="!getDisplayRating(star)"
-              >
-                ★
-              </button>
-            </div>
-
-            <!-- Numeric input for precise decimals -->
-            <div class="flex items-center gap-3 mb-4">
-              <label class="text-sm text-slate-600 font-medium whitespace-nowrap"
-                >Số sao chính xác:</label
-              >
-              <input
-                [(ngModel)]="pendingRating"
-                type="number"
-                min="1"
-                max="5"
-                step="0.5"
-                class="w-24 px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00C897]/30 focus:border-[#00C897]"
-              />
-              <span class="text-xs text-slate-400">(1.0 – 5.0)</span>
-            </div>
-
-            <!-- Preview comment -->
-            <div
-              class="mb-4 bg-slate-50 rounded-xl p-3 border border-slate-100 text-sm text-slate-600 min-h-[44px]"
-            >
-              {{ commentText || 'Không có nhận xét.' }}
+                </label>
+              </div>
             </div>
 
             <!-- Error -->
             <p *ngIf="reviewError" class="text-red-500 text-xs mb-3">{{ reviewError }}</p>
 
-            <!-- Actions -->
-            <div class="flex gap-2">
-              <button
-                (click)="cancelRatingPopup()"
-                class="flex-1 py-2.5 border border-slate-200 text-slate-600 rounded-xl text-sm font-semibold hover:bg-slate-50 transition"
+            <!-- Submit -->
+            <button
+              (click)="submitReview()"
+              [disabled]="submittingReview || reviewImageUploading.includes(true)"
+              class="px-6 py-2.5 bg-[#00C897] text-white rounded-xl font-semibold text-sm hover:bg-[#00a87f] transition disabled:opacity-60 flex items-center gap-2"
+            >
+              <svg
+                *ngIf="submittingReview"
+                class="w-4 h-4 animate-spin"
+                fill="none"
+                viewBox="0 0 24 24"
               >
-                Hủy
-              </button>
-              <button
-                (click)="confirmSubmitReview()"
-                [disabled]="submittingReview"
-                class="flex-1 py-2.5 bg-[#00C897] text-white rounded-xl text-sm font-semibold hover:bg-[#00a87f] transition disabled:opacity-60 flex items-center justify-center gap-2"
-              >
-                <svg
-                  *ngIf="submittingReview"
-                  class="w-4 h-4 animate-spin"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    class="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    stroke-width="4"
-                  />
-                  <path
-                    class="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                  />
-                </svg>
-                {{ submittingReview ? 'Đang gửi...' : 'Gửi đánh giá' }}
-              </button>
-            </div>
+                <circle
+                  class="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  stroke-width="4"
+                />
+                <path
+                  class="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                />
+              </svg>
+              {{ submittingReview ? 'Đang gửi...' : 'Thêm đánh giá +300 xu' }}
+            </button>
           </div>
         </div>
 
-        <!-- ── Báo cáo (RENTER only) ──────────────────────── -->
+        <!-- ── Báo cáo (RENTER only) ─────────────────────── -->
         <div *ngIf="isRenter" class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
           <p class="text-sm text-slate-400 mb-2">Có gì đó không ổn?</p>
           <button
             (click)="reportRoom()"
             class="px-4 py-2 text-sm text-red-500 border border-red-200 rounded-xl hover:bg-red-50 transition font-medium"
           >
-            Báo cáo bất thường
+            🚩 Báo cáo bất thường
           </button>
         </div>
 
@@ -758,11 +766,9 @@ room-detail.component.html
               Tin đăng tương tự
             </h2>
           </div>
-
           <div *ngIf="similarRooms.length === 0" class="text-sm text-slate-400 text-center py-4">
             Không có tin tương tự.
           </div>
-
           <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
             <div
               *ngFor="let sr of similarRooms"
@@ -796,7 +802,7 @@ room-detail.component.html
                   </svg>
                 </div>
                 <button
-                  class="absolute top-1.5 right-1.5 w-6 h-6 bg-white/80 rounded-full flex items-center justify-center text-gray-400 hover:text-red-400 transition"
+                  class="absolute top-1.5 right-1.5 w-6 h-6 bg-white/80 rounded-full flex items-center justify-center text-slate-400 hover:text-red-400 transition"
                 >
                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
@@ -809,13 +815,11 @@ room-detail.component.html
                 </button>
               </div>
               <p class="text-xs text-slate-500 truncate">{{ sr.address }}</p>
-              <p class="text-xs text-slate-400 truncate">{{ sr.description }}</p>
               <p class="text-sm font-bold text-[#00C897] mt-0.5">
                 {{ formatPriceShort(sr.pricePerMonth) }}
               </p>
             </div>
           </div>
-
           <div class="flex justify-center mt-4">
             <button
               (click)="goBack()"
@@ -837,7 +841,6 @@ room-detail.component.html
           *ngIf="isRenter"
           class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 sticky top-24"
         >
-          <!-- Landlord info -->
           <div class="flex items-center gap-3 mb-4">
             <div
               class="w-11 h-11 rounded-xl overflow-hidden bg-gradient-to-br from-[#00C897] to-emerald-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0"
@@ -847,9 +850,9 @@ room-detail.component.html
                 [src]="room.landlordAvatar"
                 class="w-full h-full object-cover"
               />
-              <span *ngIf="!room.landlordAvatar">
-                {{ room.landlordName?.charAt(0)?.toUpperCase() || '?' }}
-              </span>
+              <span *ngIf="!room.landlordAvatar">{{
+                room.landlordName?.charAt(0)?.toUpperCase() || '?'
+              }}</span>
             </div>
             <div>
               <p class="font-semibold text-slate-800 text-sm">
@@ -858,8 +861,6 @@ room-detail.component.html
               <p class="text-xs text-slate-400">Chủ trọ</p>
             </div>
           </div>
-
-          <!-- Action buttons -->
           <div class="space-y-2.5">
             <button
               (click)="contactLandlord()"
@@ -897,7 +898,6 @@ room-detail.component.html
           *ngIf="isLandlord && isMyRoom"
           class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 sticky top-24"
         >
-          <!-- Landlord self info -->
           <div class="flex items-center gap-3 mb-4">
             <div
               class="w-11 h-11 rounded-xl overflow-hidden bg-gradient-to-br from-[#00C897] to-emerald-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0"
@@ -907,18 +907,16 @@ room-detail.component.html
                 [src]="room.landlordAvatar"
                 class="w-full h-full object-cover"
               />
-              <span *ngIf="!room.landlordAvatar">
-                {{ room.landlordName?.charAt(0)?.toUpperCase() || '?' }}
-              </span>
+              <span *ngIf="!room.landlordAvatar">{{
+                room.landlordName?.charAt(0)?.toUpperCase() || '?'
+              }}</span>
             </div>
             <div>
               <p class="font-semibold text-slate-800 text-sm">{{ room.landlordName }}</p>
               <p class="text-xs text-emerald-500 font-medium">Phòng của bạn</p>
             </div>
           </div>
-
-          <!-- Status badge -->
-          <div class="mb-4 flex items-center gap-2">
+          <div class="mb-4 flex flex-wrap items-center gap-2">
             <span
               class="text-xs font-semibold px-2.5 py-1 rounded-full border"
               [ngClass]="getStatusClass(room.availabilityStatus)"
@@ -928,15 +926,13 @@ room-detail.component.html
             <span
               *ngIf="!room.isApproved"
               class="text-xs font-semibold px-2.5 py-1 rounded-full border bg-amber-100 text-amber-600 border-amber-200"
+              >Chờ duyệt</span
             >
-              Chờ duyệt
-            </span>
             <span
               *ngIf="!room.isActive"
               class="text-xs font-semibold px-2.5 py-1 rounded-full border bg-red-100 text-red-500 border-red-200"
+              >Đã ẩn</span
             >
-              Đã ẩn
-            </span>
             <span
               *ngIf="room?.expiredAt"
               class="text-[11px] font-semibold px-2 py-1 rounded-full border"
@@ -945,8 +941,6 @@ room-detail.component.html
               {{ getExpireText(room.expiredAt) }}
             </span>
           </div>
-
-          <!-- Action buttons -->
           <div class="space-y-2.5">
             <button
               (click)="editRoom()"
@@ -992,22 +986,20 @@ room-detail.component.html
                   d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
                 />
               </svg>
-              {{ room.isActive ? 'Đã bán / Ẩn tin' : 'Hiện tin lại' }}
+              {{ room.isActive ? 'Ẩn tin' : 'Hiện tin lại' }}
             </button>
           </div>
         </div>
 
-        <!-- ── Đánh giá sidebar summary ──────────────────── -->
+        <!-- ── Đánh giá sidebar summary ───────────────────── -->
         <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <h3 class="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
             <span class="w-1 h-4 bg-[#00C897] rounded-full inline-block"></span>
             Đánh giá gần đây
           </h3>
-
           <div *ngIf="reviews.length === 0" class="text-xs text-slate-400 text-center py-3">
             Chưa có đánh giá
           </div>
-
           <div class="space-y-3">
             <div *ngFor="let r of reviews.slice(0, 3)" class="flex gap-2">
               <div
@@ -1031,30 +1023,6 @@ room-detail.component.html
               </div>
             </div>
           </div>
-
-          <!-- Quick comment input in sidebar -->
-          <div class="mt-3 flex gap-1.5 items-center">
-            <input
-              [(ngModel)]="commentText"
-              type="text"
-              placeholder="Viết đánh giá..."
-              class="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#00C897]/30 focus:border-[#00C897]"
-              (keyup.enter)="submitComment()"
-            />
-            <button
-              (click)="submitComment()"
-              class="w-7 h-7 bg-[#00C897] text-white rounded-lg flex items-center justify-center hover:bg-[#00a87f] transition flex-shrink-0"
-            >
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-                />
-              </svg>
-            </button>
-          </div>
         </div>
 
         <!-- ── Báo cáo sidebar (RENTER) ───────────────────── -->
@@ -1070,7 +1038,23 @@ room-detail.component.html
       </div>
       <!-- end right column -->
     </div>
-    <!-- end flex row -->
   </div>
-  <!-- end main content -->
+
+  <!-- ── Image Lightbox ─────────────────────────────────────────── -->
+  <div
+    *ngIf="lightboxImageUrl"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+    (click)="closeLightbox()"
+  >
+    <img
+      [src]="lightboxImageUrl"
+      class="max-w-full max-h-full rounded-xl object-contain shadow-2xl"
+    />
+    <button
+      (click)="closeLightbox()"
+      class="absolute top-4 right-4 w-9 h-9 bg-white/20 text-white rounded-full flex items-center justify-center hover:bg-white/40 transition text-lg font-bold"
+    >
+      ✕
+    </button>
+  </div>
 </div>

@@ -216,18 +216,46 @@ export class SearchPageComponent implements OnInit, OnDestroy {
     if (resetPage) this.currentPage = 0;
 
     let params = new HttpParams();
-    if (this.city) params = params.set('city', this.city);
-    if (this.district) params = params.set('district', this.district);
-    if (this.roomType) params = params.set('roomType', this.roomType);
-    if (this.priceMin != null)
+
+    if (this.city?.trim()) {
+      params = params.set('city', this.city.trim());
+    }
+
+    if (this.district?.trim()) {
+      params = params.set('district', this.district.trim());
+    }
+
+    if (this.roomType) {
+      params = params.set('roomType', this.roomType);
+    }
+
+    if (this.priceMin != null) {
       params = params.set('priceMin', (this.priceMin * 1_000_000).toString());
-    if (this.priceMax != null)
+    }
+
+    if (this.priceMax != null) {
       params = params.set('priceMax', (this.priceMax * 1_000_000).toString());
-    if (this.areaMin != null) params = params.set('areaMin', this.areaMin.toString());
-    if (this.areaMax != null) params = params.set('areaMax', this.areaMax.toString());
-    if (this.amenities.length) params = params.set('amenities', this.amenities.join(','));
-    if (this.sortOrder) params = params.set('sort', this.sortOrder);
-    if (this.minRating != null) params = params.set('minRating', this.minRating.toString());
+    }
+
+    if (this.areaMin != null) {
+      params = params.set('areaMin', this.areaMin.toString());
+    }
+
+    if (this.areaMax != null) {
+      params = params.set('areaMax', this.areaMax.toString());
+    }
+    if (this.amenities && this.amenities.length > 0) {
+      this.amenities.forEach((a) => {
+        params = params.append('amenities', a);
+      });
+    }
+
+    if (this.minRating != null) {
+      params = params.set('minRating', this.minRating.toString());
+    }
+    if (this.sortOrder) {
+      params = params.set('sort', this.sortOrder);
+    }
 
     this.fetchRooms(params);
   }
@@ -293,10 +321,11 @@ export class SearchPageComponent implements OnInit, OnDestroy {
     this.areaMax = null;
     this.roomType = '';
     this.amenities = [];
-    this.sortOrder = 'newest';
     this.minRating = null;
+    this.sortOrder = 'newest';
     this.currentPage = 0;
-    this.fetchRooms(new HttpParams());
+
+    this.search();
   }
 
   filteredCities() {
