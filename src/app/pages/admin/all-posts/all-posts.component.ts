@@ -1,7 +1,7 @@
 import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 
@@ -54,26 +54,72 @@ export class AllPostsComponent implements OnInit {
     try {
       const res: any = await firstValueFrom(
         this.http.get(`${environment.apiUrl}/admin/rooms`, {
-          params: { page: this.currentPage, size: this.pageSize },
+          params: { page: this.currentPage.toString(), size: this.pageSize.toString() },
         })
       );
-      const rooms = res.data.content;
-      this.totalPages = res.data.totalPages;
-      this.totalElements = res.data.totalElements;
 
-      this.allPosts = rooms.map((r: any) => ({
-        id: r.roomId,
-        image: r.imageUrls?.[0] || '',
-        title: r.title,
-        price: this.formatPrice(r.pricePerMonth),
-        address: `${r.districtName}, ${r.cityName}`,
-        poster: r.landlordName || r.landlordEmail,
-        status: (r.isApproved ? 'approved' : r.isActive ? 'pending' : 'rejected') as PostStatus,
-        date: this.formatDate(r.createdAt),
-        views: 0, // API chưa trả views
-      }));
+      console.log('API Response:', res); // Debug log
+
+      // FIX: Kiểm tra cấu trúc response
+      if (!res || !res.data) {
+        throw new Error('Invalid response structure');
+      }
+
+      const pageData = res.data;
+      const rooms = pageData.content || [];
+
+      this.totalPages = pageData.totalPages || 0;
+      this.totalElements = pageData.totalElements || 0;
+
+      console.log(`Loaded ${rooms.length} rooms, total: ${this.totalElements}`); // Debug log
+
+      this.allPosts = rooms.map((r: any) => {
+        // FIX: Logic xác định status chính xác hơn
+        let status: PostStatus;
+        if (r.isApproved === true) {
+          status = 'approved';
+        } else if (r.isActive === false) {
+          // Đã bị reject/ẩn
+          status = 'rejected';
+        } else {
+          // Đang chờ duyệt (isApproved=false, isActive=true)
+          status = 'pending';
+        }
+
+        return {
+          id: r.roomId,
+          image: r.imageUrls && r.imageUrls.length > 0 ? r.imageUrls[0] : '/assets/placeholder.jpg',
+          title: r.title || 'Không có tiêu đề',
+          price: this.formatPrice(r.pricePerMonth),
+          address: `${r.districtName || ''}, ${r.cityName || ''}`,
+          poster: r.landlordName || r.landlordEmail || 'Unknown',
+          status: status,
+          date: this.formatDate(r.createdAt),
+          views: r.viewCount || 0,
+        };
+      });
+
     } catch (err: any) {
-      this.showToast(err?.error?.message || 'Lỗi tải dữ liệu', 'error');
+      console.error('Load rooms error:', err); // Debug log
+
+      // FIX: Xử lý lỗi HTTP chi tiết hơn
+      if (err instanceof HttpErrorResponse) {
+        if (err.status === 401 || err.status === 403) {
+          this.showToast('Bạn không có quyền truy cập. Vui lòng đăng nhập lại.', 'error');
+        } else if (err.status === 500) {
+          this.showToast('Lỗi server. Vui lòng thử lại sau.', 'error');
+        } else {
+          this.showToast(err.error?.message || 'Lỗi tải dữ liệu', 'error');
+        }
+      } else {
+        this.showToast(err?.message || 'Lỗi không xác định', 'error');
+      }
+
+      // Reset về empty state
+      this.allPosts = [];
+      this.totalPages = 0;
+      this.totalElements = 0;
+
     } finally {
       this.loading = false;
     }
@@ -106,20 +152,32 @@ export class AllPostsComponent implements OnInit {
 
   // Helpers
   getStatusLabel(status: PostStatus): string {
-    return { approved: 'Đã duyệt', pending: 'Chờ duyệt', rejected: 'Từ chối' }[status];
+    return { 
+      approved: 'Đã duyệt', 
+      pending: 'Chờ duyệt', 
+      rejected: 'Từ chối' 
+    }[status];
   }
 
-  formatPrice(price: number): string {
+  formatPrice(price: number | null | undefined): string {
     if (!price) return '—';
-    if (price >= 1_000_000) return (price / 1_000_000).toFixed(1).replace('.0', '') + ' triệu';
+    if (price >= 1_000_000) {
+      return (price / 1_000_000).toFixed(1).replace('.0', '') + ' triệu';
+    }
     return price.toLocaleString('vi-VN') + ' đ';
   }
 
-  formatDate(dateStr: string): string {
+  formatDate(dateStr: string | null | undefined): string {
     if (!dateStr) return '';
-    return new Date(dateStr).toLocaleDateString('vi-VN', {
-      day: '2-digit', month: '2-digit', year: 'numeric',
-    });
+    try {
+      return new Date(dateStr).toLocaleDateString('vi-VN', {
+        day: '2-digit', 
+        month: '2-digit', 
+        year: 'numeric',
+      });
+    } catch {
+      return '';
+    }
   }
 
   showToast(msg: string, type: 'success' | 'error') {
@@ -127,5 +185,9 @@ export class AllPostsComponent implements OnInit {
     this.toastType = type;
     clearTimeout(this.toastTimer);
     this.toastTimer = setTimeout(() => (this.toastMsg = ''), 3000);
+  }
+
+  ngOnDestroy() {
+    clearTimeout(this.toastTimer);
   }
 }
