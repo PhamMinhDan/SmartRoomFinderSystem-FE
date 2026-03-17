@@ -5,7 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 
-type Tab = 'all' | 'suspicious' | 'cheap';
+type Tab = 'all' | 'reports';
 
 interface PendingPost {
   id: number;
@@ -17,8 +17,26 @@ interface PendingPost {
   poster: { name: string; avatar: string };
   time: string;
   area: string;
-  suspicious: boolean;
   roomId: number;
+  reportCount: number;
+}
+
+interface ReportItem {
+  reportId: number;
+  roomId: number;
+  roomTitle: string;
+  roomAddress: string;
+  roomImageUrl: string;
+  reporterName: string;
+  reporterEmail: string;
+  reporterPhone: string;
+  reason: string;
+  reasonLabel: string;
+  details: string;
+  status: string;
+  statusLabel: string;
+  adminNote: string;
+  createdAt: string;
 }
 
 @Component({
@@ -43,21 +61,34 @@ export class PendingPostsComponent implements OnInit {
   rejectReason = '';
   rejectTargetId: number | null = null;
 
-  posts: PendingPost[] = [];
+  // Resolve report modal
+  showResolveModal = false;
+  resolveTargetId: number | null = null;
+  resolveStatus: 'RESOLVED' | 'DISMISSED' = 'RESOLVED';
+  resolveNote = '';
 
-  // Pagination
+  posts: PendingPost[] = [];
+  reports: ReportItem[] = [];
+
+  // Pagination — posts
   currentPage = 0;
   totalPages = 0;
   totalElements = 0;
   pageSize = 15;
 
+  // Pagination — reports
+  reportPage = 0;
+  reportTotalPages = 0;
+  reportTotal = 0;
+
   constructor(private http: HttpClient) {}
 
   ngOnInit(): void {
     this.loadRooms();
+    this.loadReports();
   }
 
-  // GET /admin/rooms?isApproved=false
+  // ── Load pending posts ───────────────────────────────────────
   async loadRooms() {
     this.loading = true;
     try {
@@ -67,24 +98,24 @@ export class PendingPostsComponent implements OnInit {
         })
       );
       const rooms = res.data.content;
-      this.totalPages = res.data.totalPages;
+      this.totalPages   = res.data.totalPages;
       this.totalElements = res.data.totalElements;
 
       this.posts = rooms.map((r: any) => ({
-        id: r.roomId,
-        roomId: r.roomId,
-        image: r.imageUrls?.[0] || '',
-        title: r.title,
-        price: this.formatPrice(r.pricePerMonth),
-        priceRaw: r.pricePerMonth,
-        address: `${r.address}, ${r.districtName}, ${r.cityName}`,
+        id:          r.roomId,
+        roomId:      r.roomId,
+        image:       r.imageUrls?.[0] || '',
+        title:       r.title,
+        price:       this.formatPrice(r.pricePerMonth),
+        priceRaw:    r.pricePerMonth,
+        address:     `${r.address}, ${r.districtName}, ${r.cityName}`,
         poster: {
-          name: r.landlordName || r.landlordEmail,
+          name:   r.landlordName || r.landlordEmail,
           avatar: this.getInitials(r.landlordName || r.landlordEmail),
         },
-        time: this.timeAgo(r.createdAt),
-        area: r.areaSize ? `${r.areaSize}m²` : '—',
-        suspicious: !r.landlordIdentityVerified,
+        time:        this.timeAgo(r.createdAt),
+        area:        r.areaSize ? `${r.areaSize}m²` : '—',
+        reportCount: r.reportCount ?? 0,
       }));
     } catch (err: any) {
       this.showToast(err?.error?.message || 'Lỗi tải dữ liệu', 'error');
@@ -93,18 +124,26 @@ export class PendingPostsComponent implements OnInit {
     }
   }
 
-  // Computed filters
-  suspiciousCount = computed(() => this.posts.filter(p => p.suspicious).length);
-  cheapCount = computed(() => this.posts.filter(p => p.priceRaw > 0 && p.priceRaw < 2_000_000).length);
+  // ── Load reports (PENDING) ───────────────────────────────────
+  async loadReports() {
+    try {
+      const res: any = await firstValueFrom(
+        this.http.get(`${environment.apiUrl}/admin/reports`, {
+          params: { status: 'PENDING', page: this.reportPage, size: this.pageSize },
+        })
+      );
+      this.reports          = res.data.content;
+      this.reportTotalPages = res.data.totalPages;
+      this.reportTotal      = res.data.totalElements;
+    } catch (err: any) {
+      this.showToast(err?.error?.message || 'Lỗi tải báo cáo', 'error');
+    }
+  }
 
-  filteredPosts = computed(() => {
-    const tab = this.selectedTab();
-    if (tab === 'suspicious') return this.posts.filter(p => p.suspicious);
-    if (tab === 'cheap') return this.posts.filter(p => p.priceRaw > 0 && p.priceRaw < 2_000_000);
-    return this.posts;
-  });
+  // Computed
+  filteredPosts = computed(() => this.posts);
 
-  // PATCH /admin/rooms/:id/approve
+  // ── Approve room ─────────────────────────────────────────────
   async approveRoom(roomId: number) {
     try {
       await firstValueFrom(
@@ -117,20 +156,19 @@ export class PendingPostsComponent implements OnInit {
     }
   }
 
-  // Mở modal reject
+  // ── Reject room ──────────────────────────────────────────────
   openRejectModal(roomId: number) {
     this.rejectTargetId = roomId;
-    this.rejectReason = '';
+    this.rejectReason   = '';
     this.showRejectModal = true;
   }
 
   closeRejectModal() {
     this.showRejectModal = false;
     this.rejectTargetId = null;
-    this.rejectReason = '';
+    this.rejectReason   = '';
   }
 
-  // PATCH /admin/rooms/:id/reject
   async confirmReject() {
     if (!this.rejectTargetId) return;
     try {
@@ -150,23 +188,68 @@ export class PendingPostsComponent implements OnInit {
     }
   }
 
-  // Pagination
+  // ── Resolve report ───────────────────────────────────────────
+  openResolveModal(reportId: number, defaultStatus: 'RESOLVED' | 'DISMISSED' = 'RESOLVED') {
+    this.resolveTargetId = reportId;
+    this.resolveStatus   = defaultStatus;
+    this.resolveNote     = '';
+    this.showResolveModal = true;
+  }
+
+  closeResolveModal() {
+    this.showResolveModal = false;
+    this.resolveTargetId = null;
+    this.resolveNote     = '';
+  }
+
+  async confirmResolve() {
+    if (!this.resolveTargetId) return;
+    try {
+      await firstValueFrom(
+        this.http.patch(
+          `${environment.apiUrl}/admin/reports/${this.resolveTargetId}/resolve`,
+          { status: this.resolveStatus, adminNote: this.resolveNote || null }
+        )
+      );
+      this.showToast(
+        this.resolveStatus === 'RESOLVED' ? 'Đã xử lý báo cáo' : 'Đã bỏ qua báo cáo',
+        'success'
+      );
+      this.loadReports();
+    } catch (err: any) {
+      this.showToast(err?.error?.message || 'Xử lý thất bại', 'error');
+    } finally {
+      this.closeResolveModal();
+    }
+  }
+
+  // ── Pagination ───────────────────────────────────────────────
   changePage(page: number) {
     if (page < 0 || page >= this.totalPages) return;
     this.currentPage = page;
     this.loadRooms();
   }
 
+  changeReportPage(page: number) {
+    if (page < 0 || page >= this.reportTotalPages) return;
+    this.reportPage = page;
+    this.loadReports();
+  }
+
   pageRange(): number[] {
     const start = Math.max(0, this.currentPage - 2);
-    const end = Math.min(this.totalPages - 1, this.currentPage + 2);
+    const end   = Math.min(this.totalPages - 1, this.currentPage + 2);
     return Array.from({ length: end - start + 1 }, (_, i) => start + i);
   }
 
-  // Checkbox selection
-  isSelected(id: number): boolean {
-    return this.selectedPosts().includes(id);
+  reportPageRange(): number[] {
+    const start = Math.max(0, this.reportPage - 2);
+    const end   = Math.min(this.reportTotalPages - 1, this.reportPage + 2);
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
   }
+
+  // ── Checkbox ─────────────────────────────────────────────────
+  isSelected(id: number): boolean { return this.selectedPosts().includes(id); }
 
   toggleSelect(id: number) {
     this.selectedPosts.update(prev =>
@@ -184,13 +267,10 @@ export class PendingPostsComponent implements OnInit {
   }
 
   isAllSelected(): boolean {
-    return (
-      this.selectedPosts().length === this.filteredPosts().length &&
-      this.filteredPosts().length > 0
-    );
+    return this.selectedPosts().length === this.filteredPosts().length && this.filteredPosts().length > 0;
   }
 
-  // Helpers
+  // ── Helpers ──────────────────────────────────────────────────
   formatPrice(price: number): string {
     if (!price) return '—';
     if (price >= 1_000_000) return (price / 1_000_000).toFixed(1).replace('.0', '') + ' triệu';
@@ -200,20 +280,29 @@ export class PendingPostsComponent implements OnInit {
   timeAgo(dateStr: string): string {
     if (!dateStr) return '';
     const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000);
-    if (diff < 1) return 'Vừa xong';
+    if (diff < 1)  return 'Vừa xong';
     if (diff < 60) return `${diff} phút trước`;
     const h = Math.floor(diff / 60);
-    if (h < 24) return `${h} giờ trước`;
+    if (h < 24)    return `${h} giờ trước`;
     return `${Math.floor(h / 24)} ngày trước`;
   }
 
   getInitials(name: string): string {
     if (!name) return '?';
-    return name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+    return name.split(' ').map((w: string) => w[0]).slice(0, 2).join('').toUpperCase();
+  }
+
+  getStatusClass(status: string): string {
+    const map: Record<string, string> = {
+      PENDING:   'badge-pending',
+      RESOLVED:  'badge-resolved',
+      DISMISSED: 'badge-dismissed',
+    };
+    return map[status] || '';
   }
 
   showToast(msg: string, type: 'success' | 'error') {
-    this.toastMsg = msg;
+    this.toastMsg  = msg;
     this.toastType = type;
     clearTimeout(this.toastTimer);
     this.toastTimer = setTimeout(() => (this.toastMsg = ''), 3000);

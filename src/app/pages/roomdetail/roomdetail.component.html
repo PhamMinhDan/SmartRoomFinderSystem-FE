@@ -1058,3 +1058,18 @@
     </button>
   </div>
 </div>
+
+<!-- ── Report Modal Overlay ──────────────────────────────── -->
+<div
+  *ngIf="showReportModal"
+  class="fixed inset-0 z-50 flex items-center justify-center p-4"
+  (click)="showReportModal = false"
+>
+  <!-- Backdrop -->
+  <div class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+
+  <!-- Modal content — stop click propagation so clicking inside won't close -->
+  <div class="relative z-10 w-full max-w-[600px]" (click)="$event.stopPropagation()">
+    <app-report-modal [roomId]="room!.roomId" (closed)="showReportModal = false"></app-report-modal>
+  </div>
+</div>

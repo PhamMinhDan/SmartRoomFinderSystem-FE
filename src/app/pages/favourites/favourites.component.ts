@@ -43,6 +43,7 @@ interface FavouriteItem {
   standalone: true,
   imports: [CommonModule, RouterModule],
   templateUrl: './favourites.component.html',
+  styleUrls: ['./favourites.component.css'],
 })
 export class FavouritesComponent implements OnInit {
   items: FavouriteItem[] = [];
@@ -52,6 +53,11 @@ export class FavouritesComponent implements OnInit {
   totalElements = 0;
   pageSize = 12;
   removingIds = new Set<number>();
+
+  // Comparison mode
+  isComparisonMode = false;
+  selectedForComparison = new Set<number>();
+  maxComparisons = 4;
 
   constructor(
     private favouriteService: FavouriteService,
@@ -91,6 +97,8 @@ export class FavouritesComponent implements OnInit {
         this.totalElements = Math.max(0, this.totalElements - 1);
         this.toastService.show('🤍 Đã bỏ lưu tin', 'info');
         this.removingIds.delete(roomId);
+        // Nếu xóa phòng được chọn so sánh, bỏ nó khỏi danh sách
+        this.selectedForComparison.delete(roomId);
       },
       error: () => {
         this.toastService.show('Có lỗi xảy ra', 'error');
@@ -134,5 +142,72 @@ export class FavouritesComponent implements OnInit {
     if (days === 1) return 'Hôm qua';
     if (days < 30) return `${days} ngày trước`;
     return `${Math.floor(days / 30)} tháng trước`;
+  }
+
+  // ========== COMPARISON MODE ==========
+
+  toggleComparisonMode(): void {
+    this.isComparisonMode = !this.isComparisonMode;
+    if (!this.isComparisonMode) {
+      this.selectedForComparison.clear();
+    }
+  }
+
+  toggleSelectForComparison(event: Event, roomId: number): void {
+    event.stopPropagation();
+    
+    if (this.selectedForComparison.has(roomId)) {
+      this.selectedForComparison.delete(roomId);
+    } else {
+      if (this.selectedForComparison.size < this.maxComparisons) {
+        this.selectedForComparison.add(roomId);
+        this.toastService.show('✓ Thêm vào danh sách so sánh', 'success');
+      } else {
+        this.toastService.show(`Tối đa chỉ so sánh ${this.maxComparisons} phòng`, 'warning');
+      }
+    }
+  }
+
+  isRoomSelected(roomId: number): boolean {
+    return this.selectedForComparison.has(roomId);
+  }
+
+  canSelectMore(): boolean {
+    return this.selectedForComparison.size < this.maxComparisons;
+  }
+
+  getSelectedRooms(): FavouriteItem[] {
+    return this.items.filter((item) => this.selectedForComparison.has(item.roomId));
+  }
+
+  startComparison(): void {
+    if (this.selectedForComparison.size === 0) {
+      this.toastService.show('Vui lòng chọn ít nhất 1 phòng để so sánh', 'warning');
+      return;
+    }
+    
+    // Lấy danh sách ID phòng
+    const roomIds = Array.from(this.selectedForComparison);
+    
+    // Gửi dữ liệu qua navigation
+    this.router.navigate(['/comparison'], {
+      state: { 
+        roomIds: roomIds,
+        rooms: this.getSelectedRooms()
+      },
+    });
+  }
+
+  cancelComparison(): void {
+    this.isComparisonMode = false;
+    this.selectedForComparison.clear();
+  }
+
+  removeFromComparison(event: Event, roomId: number): void {
+    event.stopPropagation();
+    this.selectedForComparison.delete(roomId);
+    if (this.selectedForComparison.size === 0) {
+      this.isComparisonMode = false;
+    }
   }
 }

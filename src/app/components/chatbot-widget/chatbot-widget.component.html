@@ -1,0 +1,160 @@
+<!-- ── Floating Button ─────────────────────────────────── -->
+<button
+  class="chatbot-fab"
+  (click)="isOpen = !isOpen"
+  title="Trợ lý tìm phòng"
+>
+  <!-- Robot / AI avatar icon khi đóng -->
+  <svg *ngIf="!isOpen" class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Đầu robot -->
+    <rect x="5" y="7" width="14" height="10" rx="2"/>
+    <!-- Ăng-ten -->
+    <line x1="12" y1="7" x2="12" y2="4"/>
+    <circle cx="12" cy="3.5" r="0.8" fill="currentColor" stroke="none"/>
+    <!-- Mắt -->
+    <circle cx="9" cy="11" r="1.2" fill="currentColor" stroke="none"/>
+    <circle cx="15" cy="11" r="1.2" fill="currentColor" stroke="none"/>
+    <!-- Miệng -->
+    <path d="M9.5 14.5h5" stroke-width="1.8"/>
+    <!-- Tai / cổng -->
+    <line x1="5" y1="11" x2="3" y2="11"/>
+    <line x1="19" y1="11" x2="21" y2="11"/>
+  </svg>
+  <!-- X icon khi mở -->
+  <svg *ngIf="isOpen" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+  </svg>
+  <span *ngIf="!isOpen" class="fab-pulse"></span>
+</button>
+
+<!-- ── Chat Window ──────────────────────────────────────── -->
+<div class="chatbot-window" [class.visible]="isOpen">
+
+  <!-- Header -->
+  <div class="chatbot-header">
+    <div class="flex items-center gap-3">
+      <div class="chatbot-avatar">
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+        </svg>
+      </div>
+      <div>
+        <p class="text-sm font-semibold text-white">RoomFinder AI</p>
+        <p class="text-xs text-emerald-200 flex items-center gap-1">
+          <span class="status-dot"></span>
+          Đang hoạt động
+        </p>
+      </div>
+    </div>
+    <div class="flex items-center gap-1">
+      <button class="header-btn" (click)="isMinimized = !isMinimized">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/>
+        </svg>
+      </button>
+      <button class="header-btn" (click)="isOpen = false">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="chatbot-body" *ngIf="!isMinimized">
+
+    <!-- Messages -->
+    <div class="messages-area">
+
+      <!-- Bot welcome message -->
+      <div class="msg-row">
+        <div class="bot-avatar-sm">
+          <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="bot-bubble">
+            Xin chào! 👋 Mình là trợ lý tìm phòng của RoomFinder.<br><br>
+            Bạn muốn tìm phòng theo tiêu chí nào? Hãy nhắn tin hoặc chọn gợi ý bên dưới nhé!
+          </div>
+          <p class="msg-time">09:41</p>
+        </div>
+      </div>
+
+      <!-- Sample user message -->
+      <div class="msg-row justify-end">
+        <div>
+          <div class="user-bubble">Tìm phòng dưới 3 triệu ở Bình Thạnh</div>
+          <p class="msg-time text-right">09:42</p>
+        </div>
+      </div>
+
+      <!-- Sample bot reply -->
+      <div class="msg-row">
+        <div class="bot-avatar-sm">
+          <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="bot-bubble">
+            Mình đã tìm thấy các tiêu chí phù hợp:<br>
+            💰 Giá ≤ 3 triệu<br>
+            📍 Khu vực: Quận Bình Thạnh<br><br>
+            Chuyển đến trang tìm kiếm ngay nhé! 🔍
+          </div>
+          <p class="msg-time">09:42</p>
+        </div>
+      </div>
+
+      <!-- Typing indicator -->
+      <div class="msg-row">
+        <div class="bot-avatar-sm">
+          <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+          </svg>
+        </div>
+        <div class="bot-bubble">
+          <div class="typing-dots">
+            <span></span><span></span><span></span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Quick questions -->
+    <div class="quick-section">
+      <p class="quick-label">Câu hỏi thường gặp</p>
+      <div class="chips-wrap">
+        <button class="chip">🏠 Phòng dưới 3 triệu</button>
+        <button class="chip">📍 Quận Bình Thạnh</button>
+        <button class="chip">👥 Phòng 2 người</button>
+        <button class="chip">✅ Đã xác thực</button>
+        <button class="chip">🛋️ Full nội thất</button>
+        <button class="chip">📐 Trên 30m²</button>
+      </div>
+    </div>
+
+    <!-- Input -->
+    <div class="input-area">
+      <input
+        type="text"
+        placeholder="Nhập yêu cầu tìm phòng..."
+        class="chat-input"
+      />
+      <button class="send-btn">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+        </svg>
+      </button>
+    </div>
+
+  </div>
+</div>

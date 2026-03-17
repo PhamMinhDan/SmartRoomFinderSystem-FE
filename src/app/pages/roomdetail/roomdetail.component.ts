@@ -6,6 +6,7 @@ import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { environment } from '../../../environments/environment';
 import { ToastService } from '../../components/toast/toast.service';
+import { ReportModalComponent } from '../reportmodal/report-modal.component';
 import mapboxgl from 'mapbox-gl';
 
 // ── Interfaces ────────────────────────────────────────────────────
@@ -72,7 +73,7 @@ interface ReviewItem {
 @Component({
   selector: 'app-room-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, ReportModalComponent],
   templateUrl: './roomdetail.component.html',
   styleUrl: './roomdetail.component.css',
 })
@@ -140,6 +141,9 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     { key: '2', label: '2★' },
     { key: '1', label: '1★' },
   ];
+
+  // Report modal
+  showReportModal = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -670,7 +674,7 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   reportRoom() {
-    alert('Chức năng báo cáo đang được phát triển.');
+    this.showReportModal = true;
   }
 
   togglePhone() {
