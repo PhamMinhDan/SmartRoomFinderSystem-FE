@@ -1,81 +1,186 @@
 <!-- featured-listings.component.html -->
+
 <div class="py-20 bg-white">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Header -->
     <div class="text-center mb-12">
-      <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-        Phòng trọ nổi bật
-      </h2>
+      <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Phòng trọ nổi bật</h2>
       <p class="text-lg text-gray-600">
         Những căn phòng được yêu thích và đánh giá cao nhất tuần này
       </p>
     </div>
 
+    <!-- Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <div *ngFor="let listing of listings"
-        class="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 group">
-        <div class="relative overflow-hidden">
+      <div
+        *ngFor="let listing of listings"
+        (click)="goDetail(listing.id)"
+        class="cursor-pointer bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg hover:border-gray-300 transition-all group"
+      >
+        <!-- IMAGE -->
+        <div class="relative overflow-hidden h-56">
           <img
             [src]="listing.image"
             [alt]="listing.title"
-            class="w-full h-56 object-cover group-hover:scale-110 transition-transform duration-500" />
-          <div class="absolute top-4 left-4">
-            <span [ngClass]="listing.statusColor" class="text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
-              {{ listing.status }}
-            </span>
-          </div>
-          <button class="absolute top-4 right-4 bg-white/90 backdrop-blur-sm p-2 rounded-full hover:bg-white transition-colors shadow-lg">
-            <svg class="w-5 h-5 text-gray-600 hover:text-[#FF6B35] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+
+          <!-- Gradient -->
+          <div
+            class="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent"
+          ></div>
+
+          <!-- Status -->
+          <span
+            class="absolute top-3 left-3 text-white text-xs px-2 py-1 rounded-full font-semibold"
+            [ngClass]="listing.statusColor"
+          >
+            {{ listing.status }}
+          </span>
+
+          <!-- HOT badge -->
+          <span
+            *ngIf="listing.hot"
+            class="absolute top-3 left-25 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-semibold shadow"
+          >
+            🔥 HOT
+          </span>
+
+          <!-- Favourite -->
+          <button
+            (click)="$event.stopPropagation(); toggleFavourite(listing.id)"
+            class="absolute top-3 right-3 w-8 h-8 bg-white/80 hover:bg-white rounded-full flex items-center justify-center shadow transition cursor-pointer"
+          >
+            <!-- saved -->
+            <svg
+              *ngIf="isSaved(listing.id)"
+              class="w-4 h-4 text-red-500"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M12 21C12 21 4 13.5 4 8.5C4 5.4 6.4 3 9.5 3C11.2 3 12.8 3.9 13.5 5.3C14.2 3.9 15.8 3 17.5 3C20.6 3 23 5.4 23 8.5C23 13.5 15 21 15 21H12Z"
+              />
+            </svg>
+
+            <!-- not saved -->
+            <svg
+              *ngIf="!isSaved(listing.id)"
+              class="w-4 h-4 text-gray-500 hover:text-red-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+              />
             </svg>
           </button>
-          <div class="absolute bottom-4 left-4">
-            <div class="bg-white/95 backdrop-blur-sm px-4 py-2 rounded-lg shadow-lg">
-              <span class="text-2xl font-bold text-[#FF6B35]">{{ listing.price }}</span>
-              <span class="text-sm text-gray-600">/tháng</span>
-            </div>
+
+          <!-- PRICE -->
+          <div class="absolute bottom-3 left-3 bg-white rounded-lg px-3 py-1 shadow">
+            <span class="text-[#FF6B35] font-bold text-lg">
+              {{ listing.price }}
+            </span>
+            <span class="text-gray-500 text-xs">/tháng</span>
           </div>
         </div>
 
-        <div class="p-5">
-          <h3 class="text-lg font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-[#FF6B35] transition-colors">
+        <!-- CONTENT -->
+        <div class="p-4 flex flex-col gap-2">
+          <!-- Title -->
+          <h2
+            class="font-semibold text-[#FF6B35] text-[18px] line-clamp-2 group-hover:text-[#FF6B35] transition"
+          >
             {{ listing.title }}
-          </h3>
+          </h2>
 
-          <div class="flex items-center text-gray-600 mb-3">
-            <svg class="w-4 h-4 mr-1 text-[#00A896]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+          <!-- Location -->
+          <div class="flex items-start text-gray-500 text-xs gap-1">
+            <svg
+              class="w-3.5 h-3.5 text-[#00A896] mt-0.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+              />
             </svg>
-            <span class="text-sm">{{ listing.location }}</span>
-          </div>
 
-          <div class="flex items-center mb-4">
-            <svg class="w-4 h-4 text-[#FFD60A] fill-current" viewBox="0 0 24 24">
-              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-            </svg>
-            <span class="text-sm font-bold text-gray-900 ml-1">{{ listing.rating }}</span>
-            <span class="text-sm text-gray-500 ml-1">({{ listing.reviews }} đánh giá)</span>
-          </div>
-
-          <div class="flex flex-wrap gap-2 mb-4">
-            <span *ngFor="let tag of listing.tags"
-              class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-xs font-medium">
-              {{ tag }}
+            <span class="break-words">
+              {{ listing.location }}
             </span>
           </div>
 
-          <button class="w-full bg-[#FF6B35] text-white py-3 rounded-lg font-bold hover:bg-[#FF6B35]/90 transition-colors">
+          <!-- Rating -->
+          <div class="flex items-center text-xs text-gray-500 gap-1">
+            <svg class="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
+              <path
+                d="M12 2l3.09 6.26L22 9.27l-5
+              4.87 1.18 6.88L12 17.77l-6.18
+              3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+              />
+            </svg>
+
+            <span class="font-semibold text-gray-800">
+              {{ listing.rating }}
+            </span>
+
+            <span>({{ listing.reviews }})</span>
+          </div>
+
+          <!-- Amenities -->
+          <div class="flex flex-wrap gap-1">
+            <span
+              *ngFor="let tag of listing.tags.slice(0, 3)"
+              class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs"
+            >
+              {{ tag }}
+            </span>
+
+            <span *ngIf="listing.tags.length === 0" class="text-xs text-gray-400 italic">
+              Chưa cập nhật tiện nghi
+            </span>
+          </div>
+
+          <!-- Button -->
+          <button
+            class="mt-2 w-full bg-[#FF6B35] text-white py-2 rounded-lg text-sm font-semibold hover:bg-[#ff5a20] transition cursor-pointer"
+          >
             Xem chi tiết
           </button>
         </div>
       </div>
     </div>
 
+    <!-- Pagination -->
+    <div class="flex justify-center mt-12 gap-2">
+      <button
+        *ngFor="let p of [].constructor(totalPages); let i = index"
+        (click)="changePage(i)"
+        class="px-4 py-2 border rounded-lg hover:bg-gray-100 transition"
+      >
+        {{ i + 1 }}
+      </button>
+    </div>
+
+    <!-- View all -->
     <div class="text-center mt-12">
-      <button class="bg-gray-900 text-white px-8 py-4 rounded-lg font-bold text-lg hover:bg-gray-800 transition-colors inline-flex items-center">
+      <button
+        (click)="goToSearch()"
+        class="bg-gray-900 text-white px-8 py-3 rounded-lg font-bold text-lg hover:bg-gray-800 transition-colors inline-flex items-center"
+      >
         Xem tất cả phòng trọ
+
         <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          <path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
         </svg>
       </button>
     </div>

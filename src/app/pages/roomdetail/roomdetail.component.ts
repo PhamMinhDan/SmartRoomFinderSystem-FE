@@ -5,8 +5,10 @@ import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { environment } from '../../../environments/environment';
+import { ToastService } from '../../components/toast/toast.service';
 import mapboxgl from 'mapbox-gl';
 
+// ── Interfaces ────────────────────────────────────────────────────
 interface RoomImage {
   imageId: number;
   imageUrl: string;
@@ -63,6 +65,7 @@ interface ReviewItem {
   userAvatar: string;
   rating: number;
   comment: string;
+  imageUrls: string[];
   createdAt: string;
 }
 
@@ -78,60 +81,82 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   loading = true;
   error = '';
 
-  // Image gallery
+  // ── Image gallery ────────────────────────────────────────────
   currentImageIndex = 0;
   showPhoneNumber = false;
 
-  // Map
+  // ── Map ──────────────────────────────────────────────────────
   private map: any;
-  private L: any;
   private MAPBOX_TOKEN =
     'pk.eyJ1IjoibHVvbmcyMyIsImEiOiJjbW1raDNueWcxZGJ3MnFwemg1aTI2cXF1In0.P4Zv9Up4zZaXXn7wG3ue4g';
+  showMap = false;
+  mapInitialized = false;
 
-  // ── Review / Comment ────────────────────────────────────
-  commentText = '';
+  // ── Reviews ──────────────────────────────────────────────────
   reviews: ReviewItem[] = [];
   reviewPage = 0;
   reviewTotalPages = 0;
   reviewsLoading = false;
 
-  // Rating popup
-  showRatingPopup = false;
-  pendingRating: number = 5;
-  hoverRating: number = 0;
+  // Review write form
+  commentText = '';
+  pendingRating = 0;
+  hoverRating = 0;
   submittingReview = false;
   reviewError = '';
+
+  // Review image upload
+  reviewImagePreviews: string[] = [];
+  reviewImageUrls: string[] = [];
+  reviewImageUploading: boolean[] = [];
+
+  // Filter & lightbox
+  activeReviewFilter = 'all';
+  lightboxImageUrl = '';
+
+  // Menu
+  openReviewMenu: number | null = null;
 
   // Similar rooms
   similarRooms: Room[] = [];
 
-  // User role
-  currentRole: string = '';
-  currentUserId: string = '';
-
-  // Map section toggle
-  showMap = false;
-  mapInitialized = false;
+  // User
+  currentRole = '';
+  currentUserId = '';
 
   // Landlord actions
   updatingStatus = false;
-  openReviewMenu: number | null = null;
+
+  pages: number[] = [];
+  ratingStats: { [key: number]: number } = {};
+
+  // ── Review filter config ──────────────────────────────────────
+  readonly reviewFilters = [
+    { key: 'latest', label: 'Gần đây' },
+    { key: 'all', label: 'Tất cả' },
+    { key: '5', label: '5★' },
+    { key: '4', label: '4★' },
+    { key: '3', label: '3★' },
+    { key: '2', label: '2★' },
+    { key: '1', label: '1★' },
+  ];
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private http: HttpClient,
+    private toast: ToastService,
     public authService: AuthService,
     @Inject(PLATFORM_ID) private platformId: Object,
   ) {}
 
+  // ── Lifecycle ────────────────────────────────────────────────
   ngOnInit(): void {
     const user = this.authService.currentUserValue;
     if (user) {
       this.currentRole = user.role_name || '';
       this.currentUserId = user.user_id || '';
     }
-
     this.route.params.subscribe((params) => {
       const id = params['id'];
       if (id) this.loadRoom(id);
@@ -146,13 +171,13 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       this.map = null;
     }
   }
+  getReviewCountByStar(star: number): number {
+    if (!this.reviews) return 0;
 
-  maskPhone(phone?: string): string {
-    if (!phone) return 'Chưa cập nhật';
-    if (phone.length < 7) return phone;
-    return phone.substring(0, 3) + '****' + phone.substring(phone.length - 2);
+    return this.reviews.filter((r) => r.rating >= star && r.rating < star + 1).length;
   }
 
+  // ── Load room ────────────────────────────────────────────────
   loadRoom(id: number) {
     this.loading = true;
     this.mapInitialized = false;
@@ -160,6 +185,7 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     this.currentImageIndex = 0;
     this.reviews = [];
     this.reviewPage = 0;
+    this.resetReviewForm();
 
     this.http.get<any>(`${environment.apiUrl}/rooms/${id}`).subscribe({
       next: (res) => {
@@ -174,6 +200,7 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
         this.loading = false;
         this.loadReviews(true);
         this.loadSimilarRooms();
+        this.loadRatingStats();
         setTimeout(() => this.initMap(), 200);
       },
       error: () => {
@@ -183,29 +210,50 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  // ── Reviews ────────────────────────────────────────────
+  loadRatingStats() {
+    if (!this.room) return;
+
+    this.http
+      .get<any>(`${environment.apiUrl}/rooms/${this.room.roomId}/reviews/stats-count`)
+      .subscribe((res) => {
+        this.ratingStats = res.data;
+      });
+  }
+  // ── Reviews ──────────────────────────────────────────────────
   loadReviews(reset = false) {
     if (!this.room) return;
+
     if (reset) {
       this.reviews = [];
-      this.reviewPage = 0;
     }
+
     this.reviewsLoading = true;
+
+    let params: any = {
+      page: this.reviewPage,
+      size: 5,
+    };
+
+    // filter
+    if (['5', '4', '3', '2', '1'].includes(this.activeReviewFilter)) {
+      params.star = this.activeReviewFilter;
+    }
+
+    // sort
+    if (this.activeReviewFilter === 'high') params.sort = 'high';
+    else if (this.activeReviewFilter === 'low') params.sort = 'low';
+    else params.sort = 'latest';
+
     this.http
-      .get<any>(`${environment.apiUrl}/rooms/${this.room.roomId}/reviews`, {
-        params: { page: this.reviewPage.toString(), size: '10' },
-      })
-      .subscribe({
-        next: (res) => {
-          const page = res?.data;
-          const content: ReviewItem[] = page?.content ?? [];
-          this.reviews = reset ? content : [...this.reviews, ...content];
-          this.reviewTotalPages = page?.totalPages ?? 0;
-          this.reviewsLoading = false;
-        },
-        error: () => {
-          this.reviewsLoading = false;
-        },
+      .get<any>(`${environment.apiUrl}/rooms/${this.room.roomId}/reviews`, { params })
+      .subscribe((res) => {
+        const page = res.data;
+
+        this.reviews = page.content;
+        this.reviewTotalPages = page.totalPages;
+        this.pages = Array.from({ length: this.reviewTotalPages }, (_, i) => i);
+
+        this.reviewsLoading = false;
       });
   }
 
@@ -215,75 +263,9 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       this.loadReviews(false);
     }
   }
-
-  // Called when user presses Enter or clicks send in comment box
-  submitComment() {
-    if (!this.commentText.trim()) return;
-    if (!this.authService.currentUserValue) {
-      this.router.navigate(['/login']);
-      return;
-    }
-    this.showRatingPopup = true;
-  }
-
-  // Called when user closes the rating popup (cancel)
-  cancelRatingPopup() {
-    this.showRatingPopup = false;
-    this.reviewError = '';
-  }
-
-  // Star hover for popup
-  setHoverRating(star: number) {
-    this.hoverRating = star;
-  }
-
-  clearHoverRating() {
-    this.hoverRating = 0;
-  }
-
-  selectRating(star: number) {
-    this.pendingRating = star;
-  }
-
-  // Submit rating + comment
-  confirmSubmitReview() {
-    if (!this.room) return;
-    if (this.pendingRating < 1 || this.pendingRating > 5) {
-      this.reviewError = 'Vui lòng chọn số sao từ 1 đến 5.';
-      return;
-    }
-    this.submittingReview = true;
-    this.reviewError = '';
-
-    const payload = {
-      rating: this.pendingRating,
-      comment: this.commentText.trim(),
-    };
-
-    this.http
-      .post<any>(`${environment.apiUrl}/rooms/${this.room.roomId}/reviews`, payload)
-      .subscribe({
-        next: (res) => {
-          const newReview: ReviewItem = res?.data;
-          if (newReview) {
-            // Always add as a new review at the top
-            this.reviews.unshift(newReview);
-          }
-
-          // Update room stats from server
-          this.refreshRatingStats();
-
-          this.commentText = '';
-          this.pendingRating = 5;
-          this.hoverRating = 0;
-          this.showRatingPopup = false;
-          this.submittingReview = false;
-        },
-        error: (err) => {
-          this.reviewError = err?.error?.message || 'Đã có lỗi xảy ra, vui lòng thử lại.';
-          this.submittingReview = false;
-        },
-      });
+  changePage(page: number) {
+    this.reviewPage = page;
+    this.loadReviews(true);
   }
 
   refreshRatingStats() {
@@ -299,6 +281,167 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  // ── Rating bars (5 → 1) ───────────────────────────────────────
+  get ratingBars(): { star: number; count: number; percent: number }[] {
+    const total = this.reviews.length;
+    return [5, 4, 3, 2, 1].map((star) => {
+      const count = this.reviews.filter((r) => Math.floor(r.rating) === star).length;
+      return { star, count, percent: total > 0 ? (count / total) * 100 : 0 };
+    });
+  }
+
+  // ── Filtered reviews ──────────────────────────────────────────
+  get filteredReviews(): ReviewItem[] {
+    switch (this.activeReviewFilter) {
+      case 'high':
+        return [...this.reviews].sort((a, b) => b.rating - a.rating);
+      case 'low':
+        return [...this.reviews].sort((a, b) => a.rating - b.rating);
+      default:
+        return this.reviews;
+    }
+  }
+
+  setReviewFilter(key: string) {
+    this.activeReviewFilter = key;
+    this.loadReviews(true);
+  }
+
+  // ── Star rating input ────────────────────────────────────────
+  selectRating(star: number) {
+    this.pendingRating = star;
+  }
+
+  setHoverRating(star: number) {
+    this.hoverRating = star;
+  }
+
+  clearHoverRating() {
+    this.hoverRating = 0;
+  }
+  onRatingInput() {
+    if (this.pendingRating < 0) this.pendingRating = 0;
+    if (this.pendingRating > 5) this.pendingRating = 5;
+
+    this.pendingRating = Math.round(this.pendingRating * 10) / 10;
+  }
+
+  getDisplayRating(star: number): boolean {
+    return star <= (this.hoverRating || Math.floor(this.pendingRating));
+  }
+
+  // ── Image upload ─────────────────────────────────────────────
+  onReviewImagesSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files) return;
+
+    const remaining = 3 - this.reviewImagePreviews.length;
+    const files = Array.from(input.files).slice(0, remaining);
+
+    files.forEach((file) => {
+      const idx = this.reviewImagePreviews.length;
+      this.reviewImagePreviews.push('');
+      this.reviewImageUrls.push('');
+      this.reviewImageUploading.push(true);
+
+      // Immediate base64 preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        this.reviewImagePreviews[idx] = e.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+
+      // Upload to Cloudinary via backend
+      this.uploadReviewImage(file, idx);
+    });
+
+    input.value = '';
+  }
+
+  uploadReviewImage(file: File, idx: number) {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    this.http.post<{ url: string }>(`${environment.apiUrl}/upload`, formData).subscribe({
+      next: (res) => {
+        this.reviewImageUrls[idx] = res.url;
+        this.reviewImageUploading[idx] = false;
+      },
+      error: () => {
+        this.reviewError = 'Upload ảnh thất bại. Vui lòng thử lại.';
+        this.reviewImageUploading[idx] = false;
+        this.reviewImagePreviews.splice(idx, 1);
+        this.reviewImageUrls.splice(idx, 1);
+        this.reviewImageUploading.splice(idx, 1);
+      },
+    });
+  }
+
+  removeReviewImage(idx: number) {
+    this.reviewImagePreviews.splice(idx, 1);
+    this.reviewImageUrls.splice(idx, 1);
+    this.reviewImageUploading.splice(idx, 1);
+  }
+
+  // ── Submit review ────────────────────────────────────────────
+  submitReview() {
+    if (!this.room) return;
+    if (!this.authService.currentUserValue) {
+      this.router.navigate(['/login']);
+      return;
+    }
+    if (this.pendingRating < 1 || this.pendingRating > 5) {
+      this.reviewError = 'Vui lòng chọn số sao từ 1 đến 5.';
+      return;
+    }
+    if (this.reviewImageUploading.includes(true)) {
+      this.reviewError = 'Vui lòng đợi ảnh upload xong.';
+      return;
+    }
+
+    this.submittingReview = true;
+    this.reviewError = '';
+
+    const uploadedUrls = this.reviewImageUrls.filter((url) => !!url);
+
+    const payload = {
+      rating: this.pendingRating,
+      comment: this.commentText.trim(),
+      imageUrls: uploadedUrls.length > 0 ? uploadedUrls : null,
+    };
+
+    this.http
+      .post<any>(`${environment.apiUrl}/rooms/${this.room.roomId}/reviews`, payload)
+      .subscribe({
+        next: (res) => {
+          const newReview: ReviewItem = res?.data;
+
+          this.toast.show('Đánh giá thành công 🎉', 'success');
+          this.reviewPage = 0;
+          this.loadReviews(true);
+
+          this.refreshRatingStats();
+          this.resetReviewForm();
+          this.submittingReview = false;
+        },
+        error: (err) => {
+          this.reviewError = err?.error?.message || 'Đã có lỗi xảy ra, vui lòng thử lại.';
+          this.submittingReview = false;
+          this.toast.show(this.reviewError, 'error');
+        },
+      });
+  }
+
+  resetReviewForm() {
+    this.commentText = '';
+    this.pendingRating = 0;
+    this.hoverRating = 0;
+    this.reviewError = '';
+    this.reviewImagePreviews = [];
+    this.reviewImageUrls = [];
+    this.reviewImageUploading = [];
+  }
+
   deleteReview(reviewId: number) {
     if (!this.room) return;
     if (!confirm('Xóa đánh giá này?')) return;
@@ -307,30 +450,31 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       .subscribe({
         next: () => {
           this.reviews = this.reviews.filter((r) => r.reviewId !== reviewId);
+          this.openReviewMenu = null;
           this.refreshRatingStats();
         },
       });
   }
 
-  // Star display helpers
-  getStarArray(rating: number): ('full' | 'half' | 'empty')[] {
-    return [1, 2, 3, 4, 5].map((i) => {
-      if (rating >= i) return 'full';
-      if (rating > i - 1 && rating < i) return 'half';
-      return 'empty';
-    });
+  toggleReviewMenu(reviewId: number) {
+    this.openReviewMenu = this.openReviewMenu === reviewId ? null : reviewId;
   }
 
-  getRatingArray(rating: number): boolean[] {
-    return [1, 2, 3, 4, 5].map((i) => i <= Math.round(rating || 0));
+  reportReview(reviewId: number) {
+    this.openReviewMenu = null;
+    alert('Chức năng báo cáo sẽ được phát triển sau.');
   }
 
-  getDisplayRating(star: number): boolean {
-    const active = this.hoverRating || this.pendingRating;
-    return star <= active;
+  // ── Lightbox ─────────────────────────────────────────────────
+  openLightbox(url: string) {
+    this.lightboxImageUrl = url;
   }
 
-  // ── Similar Rooms ─────────────────────────────────────
+  closeLightbox() {
+    this.lightboxImageUrl = '';
+  }
+
+  // ── Similar rooms ─────────────────────────────────────────────
   loadSimilarRooms() {
     if (!this.room) return;
     this.http
@@ -351,7 +495,7 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       });
   }
 
-  // ── Image gallery ─────────────────────────────────────
+  // ── Image gallery ─────────────────────────────────────────────
   get primaryImage(): string {
     if (!this.room?.images?.length) return '';
     const img = this.room.images[this.currentImageIndex];
@@ -373,7 +517,7 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     this.currentImageIndex = index;
   }
 
-  // ── Map ───────────────────────────────────────────────
+  // ── Map ───────────────────────────────────────────────────────
   async toggleMap() {
     this.showMap = !this.showMap;
     if (this.showMap && !this.mapInitialized) {
@@ -466,7 +610,7 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  // ── Role helpers ─────────────────────────────────────
+  // ── Role helpers ──────────────────────────────────────────────
   get isRenter(): boolean {
     const role = this.currentRole?.toUpperCase();
     return role === 'RENTER' || role === 'USER';
@@ -480,7 +624,7 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     return !!this.currentUserId && this.room?.landlordId === this.currentUserId;
   }
 
-  // ── Actions ───────────────────────────────────────────
+  // ── Actions ───────────────────────────────────────────────────
   contactLandlord() {
     if (!this.room) return;
     this.router.navigate(['/chat'], {
@@ -533,7 +677,24 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     this.showPhoneNumber = !this.showPhoneNumber;
   }
 
-  // ── Display helpers ───────────────────────────────────
+  maskPhone(phone?: string): string {
+    if (!phone) return 'Chưa cập nhật';
+    if (phone.length < 7) return phone;
+    return phone.substring(0, 3) + '****' + phone.substring(phone.length - 2);
+  }
+
+  // ── Star helpers ──────────────────────────────────────────────
+  getStarArray(rating: number): number[] {
+    return [1, 2, 3, 4, 5].map((i) => {
+      const diff = rating - (i - 1);
+
+      if (diff >= 1) return 1;
+      if (diff > 0) return diff;
+      return 0;
+    });
+  }
+
+  // ── Format helpers ────────────────────────────────────────────
   formatPrice(price: number): string {
     if (!price) return 'Liên hệ';
     if (price >= 1_000_000) {
@@ -627,12 +788,10 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   isVideo(url: string): boolean {
     return url?.includes('/video/upload/') || url?.endsWith('.mp4');
   }
-
-  toggleReviewMenu(reviewId: number) {
-    this.openReviewMenu = this.openReviewMenu === reviewId ? null : reviewId;
-  }
-  reportReview(reviewId: number) {
-    this.openReviewMenu = null;
-    alert('Chức năng báo cáo sẽ được phát triển sau.');
+  scrollToReviews() {
+    const el = document.getElementById('reviewSection');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   }
 }
