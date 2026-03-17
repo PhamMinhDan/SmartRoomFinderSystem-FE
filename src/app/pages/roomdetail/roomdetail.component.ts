@@ -557,7 +557,7 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
         )
         .addTo(this.map);
 
-      if (this.isRenter) {
+      if (this.canContact) {
         navigator.geolocation.getCurrentPosition(
           (pos) => {
             const userLat = pos.coords.latitude;
@@ -797,5 +797,8 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+  }
+  get canContact(): boolean {
+    return !this.isMyRoom;
   }
 }
