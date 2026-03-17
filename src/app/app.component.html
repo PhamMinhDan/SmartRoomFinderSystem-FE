@@ -7,4 +7,8 @@
     <router-outlet></router-outlet>
   </main>
 </div>
+
 <app-toast></app-toast>
+
+<!-- Chatbot widget — hiển thị ở góc dưới phải, ẩn khi ở /admin --> <!-- 👈 thêm -->
+<app-chatbot-widget *ngIf="!isAdminRoute"></app-chatbot-widget>

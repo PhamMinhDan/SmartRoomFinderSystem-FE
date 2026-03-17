@@ -2,126 +2,252 @@
 
   <div class="page-header">
     <h1 class="page-title">Chờ duyệt</h1>
-    <p class="page-breadcrumb">RoomFinder Admin &rsaquo; Chờ duyệt</p>
+    <p class="page-breadcrumb">RoomFinder Admin › Chờ duyệt</p>
   </div>
 
   <!-- Tabs -->
   <div class="tabs-wrap">
-    <button
-      class="tab-btn"
-      [class.active-all]="selectedTab() === 'all'"
-      (click)="selectedTab.set('all')"
-    >
+    <button class="tab-btn" [class.active-all]="selectedTab() === 'all'" (click)="selectedTab.set('all')">
       Chờ duyệt ({{ posts.length }})
     </button>
-    <button
-      class="tab-btn"
-      [class.active-warning]="selectedTab() === 'suspicious'"
-      (click)="selectedTab.set('suspicious')"
-    >
-      Nghi vấn spam ({{ suspiciousCount() }})
-    </button>
-    <button
-      class="tab-btn"
-      [class.active-danger]="selectedTab() === 'cheap'"
-      (click)="selectedTab.set('cheap')"
-    >
-      Giá rẻ bất thường ({{ cheapCount() }})
+    <button class="tab-btn" [class.active-danger]="selectedTab() === 'reports'" (click)="selectedTab.set('reports')">
+      🚩 Báo cáo vi phạm ({{ reportTotal }})
     </button>
   </div>
 
-  <!-- Bulk actions bar -->
-  @if (selectedPosts().length > 0) {
-    <div class="bulk-bar">
-      <span class="bulk-count">Đã chọn {{ selectedPosts().length }} tin</span>
-      <div class="bulk-actions">
-        <button class="btn-bulk-approve">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22,4 12,14.01 9,11.01"/>
-          </svg>
-          Phê duyệt chọn
-        </button>
-        <button class="btn-bulk-reject">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-            <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
-          </svg>
-          Từ chối chọn
-        </button>
+  <!-- ══════════════════════════════════════════════════
+       TAB: Chờ duyệt
+  ══════════════════════════════════════════════════ -->
+  @if (selectedTab() === 'all') {
+
+    <!-- Bulk actions bar -->
+    @if (selectedPosts().length > 0) {
+      <div class="bulk-bar">
+        <span class="bulk-count">Đã chọn {{ selectedPosts().length }} tin</span>
+        <div class="bulk-actions">
+          <button class="btn-bulk-approve">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22,4 12,14.01 9,11.01"/>
+            </svg>
+            Phê duyệt chọn
+          </button>
+          <button class="btn-bulk-reject">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+              <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+            </svg>
+            Từ chối chọn
+          </button>
+        </div>
+      </div>
+    }
+
+    <!-- Select all + count -->
+    <div class="list-controls">
+      <button class="select-all-btn" (click)="selectAll()">
+        {{ isAllSelected() ? 'Bỏ chọn tất cả' : 'Chọn tất cả' }}
+      </button>
+      <span class="list-count">{{ filteredPosts().length }} tin đăng</span>
+    </div>
+
+    <!-- Cards Grid -->
+    <div class="posts-grid">
+      @for (post of filteredPosts(); track post.id) {
+        <div class="post-card" [class.selected]="isSelected(post.id)">
+          <div class="card-img-wrap">
+            <input type="checkbox" class="post-checkbox" [checked]="isSelected(post.id)" (change)="toggleSelect(post.id)"/>
+            <img [src]="post.image" [alt]="post.title" class="card-img"/>
+            @if (post.reportCount > 0) {
+              <div class="badge-spam">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                  <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                {{ post.reportCount }} báo cáo
+              </div>
+            }
+          </div>
+
+          <div class="card-body">
+            <h3 class="card-title-text">{{ post.title }}</h3>
+            <p class="card-price">{{ post.price }}/tháng</p>
+            <div class="card-meta">
+              <p>📍 {{ post.address }}</p>
+              <p>📐 {{ post.area }}</p>
+            </div>
+
+            <div class="card-poster">
+              <div class="poster-avatar">{{ post.poster.avatar }}</div>
+              <div>
+                <p class="poster-name">{{ post.poster.name }}</p>
+                <p class="poster-time">{{ post.time }}</p>
+              </div>
+            </div>
+
+            <div class="card-actions">
+              <button class="btn-approve" (click)="approveRoom(post.roomId)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22,4 12,14.01 9,11.01"/>
+                </svg>
+                Duyệt
+              </button>
+              <button class="btn-reject" (click)="openRejectModal(post.roomId)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                  <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+                </svg>
+                Từ chối
+              </button>
+              <button class="btn-view">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Pagination posts -->
+    @if (totalPages > 1) {
+      <div class="pagination">
+        <button class="page-btn" [disabled]="currentPage === 0" (click)="changePage(currentPage - 1)">‹</button>
+        @for (p of pageRange(); track p) {
+          <button class="page-btn" [class.active]="p === currentPage" (click)="changePage(p)">{{ p + 1 }}</button>
+        }
+        <button class="page-btn" [disabled]="currentPage >= totalPages - 1" (click)="changePage(currentPage + 1)">›</button>
+      </div>
+    }
+  }
+
+  <!-- ══════════════════════════════════════════════════
+       TAB: Báo cáo vi phạm
+  ══════════════════════════════════════════════════ -->
+  @if (selectedTab() === 'reports') {
+
+    <div class="list-controls">
+      <span class="list-count">{{ reportTotal }} báo cáo đang chờ xử lý</span>
+    </div>
+
+    @if (reports.length === 0) {
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48" class="empty-icon">
+          <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <p>Không có báo cáo nào đang chờ xử lý</p>
+      </div>
+    }
+
+    <div class="reports-list">
+      @for (report of reports; track report.reportId) {
+        <div class="report-card-item">
+
+          <!-- Room image -->
+          <div class="report-img-wrap">
+            <img *ngIf="report.roomImageUrl" [src]="report.roomImageUrl" [alt]="report.roomTitle" class="report-img"/>
+            <div *ngIf="!report.roomImageUrl" class="report-img-placeholder">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="24" height="24">
+                <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+                <path d="M21 15l-5-5L5 21"/>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Report info -->
+          <div class="report-info">
+            <div class="report-room-title">{{ report.roomTitle }}</div>
+            <div class="report-room-address">📍 {{ report.roomAddress }}</div>
+
+            <div class="report-reason-row">
+              <span class="reason-badge">{{ report.reasonLabel }}</span>
+              @if (report.details) {
+                <span class="report-details">"{{ report.details }}"</span>
+              }
+            </div>
+
+            <div class="report-reporter">
+              Người báo cáo: <strong>{{ report.reporterName }}</strong>
+              · {{ report.reporterPhone }}
+              · {{ report.reporterEmail }}
+            </div>
+
+            <div class="report-time">{{ timeAgo(report.createdAt) }}</div>
+          </div>
+
+          <!-- Actions -->
+          <div class="report-actions">
+            <button class="btn-resolve" (click)="openResolveModal(report.reportId, 'RESOLVED')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22,4 12,14.01 9,11.01"/>
+              </svg>
+              Xử lý
+            </button>
+            <button class="btn-dismiss" (click)="openResolveModal(report.reportId, 'DISMISSED')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+              Bỏ qua
+            </button>
+          </div>
+
+        </div>
+      }
+    </div>
+
+    <!-- Pagination reports -->
+    @if (reportTotalPages > 1) {
+      <div class="pagination">
+        <button class="page-btn" [disabled]="reportPage === 0" (click)="changeReportPage(reportPage - 1)">‹</button>
+        @for (p of reportPageRange(); track p) {
+          <button class="page-btn" [class.active]="p === reportPage" (click)="changeReportPage(p)">{{ p + 1 }}</button>
+        }
+        <button class="page-btn" [disabled]="reportPage >= reportTotalPages - 1" (click)="changeReportPage(reportPage + 1)">›</button>
+      </div>
+    }
+  }
+
+  <!-- Toast -->
+  @if (toastMsg) {
+    <div class="toast" [class.toast-error]="toastType === 'error'">{{ toastMsg }}</div>
+  }
+
+  <!-- Reject modal -->
+  @if (showRejectModal) {
+    <div class="modal-backdrop" (click)="closeRejectModal()">
+      <div class="modal-box" (click)="$event.stopPropagation()">
+        <h3 class="modal-title">Từ chối tin đăng</h3>
+        <textarea [(ngModel)]="rejectReason" placeholder="Lý do từ chối (tùy chọn)..." class="modal-textarea" rows="3"></textarea>
+        <div class="modal-actions">
+          <button class="btn-modal-cancel" (click)="closeRejectModal()">Huỷ</button>
+          <button class="btn-modal-confirm-reject" (click)="confirmReject()">Xác nhận từ chối</button>
+        </div>
       </div>
     </div>
   }
 
-  <!-- Select all + count -->
-  <div class="list-controls">
-    <button class="select-all-btn" (click)="selectAll()">
-      {{ isAllSelected() ? 'Bỏ chọn tất cả' : 'Chọn tất cả' }}
-    </button>
-    <span class="list-count">{{ filteredPosts().length }} tin đăng</span>
-  </div>
-
-  <!-- Cards Grid -->
-  <div class="posts-grid">
-    @for (post of filteredPosts(); track post.id) {
-      <div class="post-card" [class.selected]="isSelected(post.id)">
-
-        <div class="card-img-wrap">
-          <input
-            type="checkbox"
-            class="post-checkbox"
-            [checked]="isSelected(post.id)"
-            (change)="toggleSelect(post.id)"
-          />
-          <img [src]="post.image" [alt]="post.title" class="card-img" />
-          @if (post.suspicious) {
-            <div class="badge-spam">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
-                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-              </svg>
-              SPAM?
-            </div>
-          }
+  <!-- Resolve report modal -->
+  @if (showResolveModal) {
+    <div class="modal-backdrop" (click)="closeResolveModal()">
+      <div class="modal-box" (click)="$event.stopPropagation()">
+        <h3 class="modal-title">
+          {{ resolveStatus === 'RESOLVED' ? 'Xử lý báo cáo' : 'Bỏ qua báo cáo' }}
+        </h3>
+        <p class="modal-desc">
+          {{ resolveStatus === 'RESOLVED'
+            ? 'Xác nhận đã xử lý vi phạm. Bạn có thể ghi chú hành động đã thực hiện.'
+            : 'Báo cáo này sẽ bị đánh dấu là không hợp lệ.' }}
+        </p>
+        <textarea [(ngModel)]="resolveNote" placeholder="Ghi chú (tùy chọn)..." class="modal-textarea" rows="3"></textarea>
+        <div class="modal-actions">
+          <button class="btn-modal-cancel" (click)="closeResolveModal()">Huỷ</button>
+          <button
+            [class]="resolveStatus === 'RESOLVED' ? 'btn-modal-confirm-approve' : 'btn-modal-confirm-reject'"
+            (click)="confirmResolve()"
+          >
+            {{ resolveStatus === 'RESOLVED' ? 'Xác nhận xử lý' : 'Xác nhận bỏ qua' }}
+          </button>
         </div>
-
-        <div class="card-body">
-          <h3 class="card-title-text">{{ post.title }}</h3>
-          <p class="card-price">{{ post.price }}/tháng</p>
-          <div class="card-meta">
-            <p>📍 {{ post.address }}</p>
-            <p>📐 {{ post.area }}</p>
-          </div>
-
-          <div class="card-poster">
-            <div class="poster-avatar">{{ post.poster.avatar }}</div>
-            <div>
-              <p class="poster-name">{{ post.poster.name }}</p>
-              <p class="poster-time">{{ post.time }}</p>
-            </div>
-          </div>
-
-          <div class="card-actions">
-            <button class="btn-approve">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22,4 12,14.01 9,11.01"/>
-              </svg>
-              Duyệt
-            </button>
-            <button class="btn-reject">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
-              </svg>
-              Từ chối
-            </button>
-            <button class="btn-view">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
-              </svg>
-            </button>
-          </div>
-        </div>
-
       </div>
-    }
-  </div>
+    </div>
+  }
 
 </div>

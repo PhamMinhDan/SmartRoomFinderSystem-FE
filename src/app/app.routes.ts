@@ -12,6 +12,7 @@ import { ChatComponent } from './pages/chat/chat.component';
 import { RoomDetailComponent } from './pages/roomdetail/roomdetail.component';
 import { FavouritesComponent } from './pages/favourites/favourites.component';
 import { EditRoomComponent } from './pages/edit-room/edit-room.component';
+import { ComparisonComponent } from './pages/comparison/comparison.component';
 
 export const routes: Routes = [
   {
@@ -55,6 +56,7 @@ export const routes: Routes = [
     title: 'Quản lý tin đăng - RoomFinder.vn',
   },
   { path: 'saved', component: FavouritesComponent, title: 'Tin đã lưu - RoomFinder.vn' },
+  { path: 'comparison', component: ComparisonComponent, title: 'So sánh phòng - RoomFinder.vn' },
   {
     path: 'edit-room/:id',
     component: EditRoomComponent,

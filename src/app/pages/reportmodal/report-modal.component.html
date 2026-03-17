@@ -1,0 +1,141 @@
+<div>
+  <div
+    class="report-card bg-white rounded-2xl shadow-2xl relative overflow-hidden transition-all duration-300 w-full flex flex-col"
+    style="max-height: 90vh;"
+  >
+    <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-teal-400 via-teal-500 to-teal-600 z-10"></div>
+
+    <!-- Header -->
+    <div class="flex-shrink-0 flex justify-between items-center px-5 pt-7 pb-3 sm:px-8">
+      <h2 class="text-lg sm:text-xl font-bold text-gray-900 flex-1 text-center">
+        Báo cáo vi phạm
+      </h2>
+      <button type="button" (click)="close()" class="text-gray-400 hover:text-gray-600 transition-colors ml-2 flex-shrink-0">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Success state -->
+    <div *ngIf="submitted" class="flex flex-col items-center justify-center py-12 px-8 gap-4">
+      <div class="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+        <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+        </svg>
+      </div>
+      <p class="text-base font-semibold text-gray-800 text-center">Báo cáo đã được gửi thành công!</p>
+      <p class="text-sm text-gray-500 text-center">Chúng tôi sẽ xem xét và xử lý trong thời gian sớm nhất.</p>
+    </div>
+
+    <!-- Form -->
+    <div *ngIf="!submitted" class="overflow-y-auto flex-1 px-5 pb-5 sm:px-8 sm:pb-6">
+      <form (ngSubmit)="onSubmit()" class="space-y-3">
+
+        <!-- Reason list -->
+        <div class="space-y-2">
+          <label
+            *ngFor="let reason of reasons"
+            [class]="'flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-200 ' +
+              (selectedReason === reason
+                ? 'bg-teal-50 border-2 border-teal-500'
+                : 'bg-gray-50 border-2 border-transparent hover:bg-gray-100 hover:border-gray-200')"
+          >
+            <input type="radio" name="reason" [value]="reason" [(ngModel)]="selectedReason" class="sr-only"/>
+            <div
+              class="w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all duration-200"
+              [ngClass]="{
+                'border-teal-500 bg-teal-500': selectedReason === reason,
+                'border-gray-300 bg-white':    selectedReason !== reason
+              }"
+            >
+              <div *ngIf="selectedReason === reason" class="w-1.5 h-1.5 rounded-full bg-white"></div>
+            </div>
+            <span class="text-sm" [ngClass]="{ 'text-gray-900 font-medium': selectedReason === reason, 'text-gray-700': selectedReason !== reason }">
+              {{ reason }}
+            </span>
+          </label>
+        </div>
+
+        <!-- Other details -->
+        <div *ngIf="selectedReason === 'Lý do khác'" class="space-y-1.5 animate-slide-down">
+          <label class="block text-sm font-semibold text-gray-700">Chi tiết <span class="text-red-500">*</span></label>
+          <div class="relative">
+            <textarea
+              [(ngModel)]="otherDetails" name="otherDetails" placeholder="Lý do khác..." rows="3"
+              class="w-full px-4 py-2.5 rounded-xl border-2 transition-all duration-200 resize-none focus:outline-none focus:ring-2 text-sm"
+              [ngClass]="{
+                'border-red-500 focus:ring-red-100':   isOverLimit,
+                'border-teal-500 focus:ring-teal-100': !isOverLimit && focusedField === 'details',
+                'border-gray-200 focus:ring-teal-100': !isOverLimit && focusedField !== 'details'
+              }"
+              (focus)="focusedField = 'details'" (blur)="focusedField = null"
+            ></textarea>
+            <div class="absolute bottom-2.5 right-3 text-xs" [ngClass]="isOverLimit ? 'text-red-500 font-semibold' : 'text-gray-400'">
+              {{ charCount }}/500
+            </div>
+          </div>
+        </div>
+
+        <!-- Contact fields -->
+        <div class="border-t border-gray-100 pt-4 space-y-3">
+
+          <!-- Phone -->
+          <div class="space-y-1.5">
+            <label class="block text-sm font-semibold text-gray-700">Điện thoại <span class="text-red-500">*</span></label>
+            <div class="relative">
+              <div class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium pointer-events-none">+84</div>
+              <input type="tel" [(ngModel)]="phone" name="phone" placeholder="90 123 4567"
+                class="w-full pl-12 pr-4 py-2.5 rounded-xl border-2 transition-all duration-200 focus:outline-none focus:ring-2 text-sm"
+                [ngClass]="{
+                  'border-teal-500 focus:ring-teal-100': focusedField === 'phone',
+                  'border-gray-200 focus:ring-teal-100': focusedField !== 'phone'
+                }"
+                (focus)="focusedField = 'phone'" (blur)="focusedField = null"/>
+            </div>
+          </div>
+
+          <!-- Email -->
+          <div class="space-y-1.5">
+            <label class="block text-sm font-semibold text-gray-700">Email <span class="text-red-500">*</span></label>
+            <input type="email" [(ngModel)]="email" name="email" placeholder="email@example.com"
+              class="w-full px-4 py-2.5 rounded-xl border-2 transition-all duration-200 focus:outline-none focus:ring-2 text-sm"
+              [ngClass]="{
+                'border-teal-500 focus:ring-teal-100': focusedField === 'email',
+                'border-gray-200 focus:ring-teal-100': focusedField !== 'email'
+              }"
+              (focus)="focusedField = 'email'" (blur)="focusedField = null"/>
+          </div>
+
+          <!-- Privacy notice -->
+          <div class="flex items-center gap-2 text-xs text-gray-500 bg-gray-50 p-2.5 rounded-xl">
+            <svg class="w-3.5 h-3.5 text-teal-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+            </svg>
+            <span>Thông tin của bạn được bảo mật</span>
+          </div>
+        </div>
+
+        <!-- Error message -->
+        <div *ngIf="showError" class="bg-red-50 border border-red-200 text-red-700 px-3 py-2.5 rounded-xl text-sm shake">
+          {{ errorMessage }}
+        </div>
+
+        <!-- Submit button -->
+        <button
+          type="submit"
+          [disabled]="submitting"
+          class="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold py-3 rounded-xl transition-all duration-200 hover:scale-[1.02] hover:shadow-lg active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-orange-200 text-sm disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        >
+          <svg *ngIf="submitting" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+          </svg>
+          {{ submitting ? 'Đang gửi...' : 'GỬI BÁO CÁO' }}
+        </button>
+
+      </form>
+    </div>
+  </div>
+</div>

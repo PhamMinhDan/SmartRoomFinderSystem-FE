@@ -1,0 +1,276 @@
+<div class="min-h-screen bg-gray-50 pt-10 pb-20">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+
+    <!-- Header -->
+    <div class="flex items-center gap-4 mb-8">
+      <button
+        (click)="goBack()"
+        class="p-2 hover:bg-gray-200 rounded-lg transition"
+        title="Quay lại"
+      >
+        <svg class="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+      </button>
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">So sánh phòng</h1>
+        <p class="text-sm text-gray-500 mt-0.5">{{ comparison?.totalRooms ?? 0 }} phòng đang được so sánh</p>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="loading" class="flex items-center justify-center py-20">
+      <div class="animate-spin">
+        <svg class="w-8 h-8 text-[#00C897]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+          />
+        </svg>
+      </div>
+    </div>
+
+    <!-- Empty state -->
+    <div
+      *ngIf="!loading && !comparison"
+      class="flex flex-col items-center justify-center py-28 text-center"
+    >
+      <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-5">
+        <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+      </div>
+      <p class="text-slate-600 font-semibold text-lg">Không có dữ liệu so sánh</p>
+      <p class="text-slate-400 text-sm mt-1 mb-6">Vui lòng chọn phòng từ danh sách yêu thích</p>
+      <button
+        (click)="goBack()"
+        class="px-6 py-2.5 bg-[#00C897] text-white rounded-xl font-semibold hover:bg-[#00a87f] transition text-sm"
+      >
+        Quay lại danh sách
+      </button>
+    </div>
+
+    <!-- Comparison Table -->
+    <div *ngIf="!loading && comparison" class="overflow-x-auto rounded-xl border border-gray-200 shadow-sm">
+      <table class="w-full bg-white">
+
+        <!-- Room header row -->
+        <thead>
+          <tr class="border-b border-gray-200">
+            <th class="px-6 py-5 text-left text-sm font-semibold text-gray-500 bg-gray-50 w-40">
+              Thông tin
+            </th>
+            <ng-container *ngFor="let room of comparison.rooms">
+              <th class="px-6 py-5 text-center min-w-[220px] border-l border-gray-200 bg-white">
+                <div class="flex flex-col items-center gap-3">
+                  <!-- Room image -->
+                  <div class="w-full h-36 rounded-lg overflow-hidden bg-gray-100">
+                    <img
+                      *ngIf="room.images?.[0]?.imageUrl"
+                      [src]="room.images[0].imageUrl"
+                      [alt]="room.title"
+                      class="w-full h-full object-cover"
+                    />
+                    <div
+                      *ngIf="!room.images?.[0]?.imageUrl"
+                      class="w-full h-full flex items-center justify-center"
+                    >
+                      <svg class="w-10 h-10 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
+                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                  </div>
+                  <!-- Room title & link -->
+                  <div class="text-center">
+                    <h3 class="font-semibold text-gray-900 text-sm line-clamp-2 leading-snug">
+                      {{ room.title }}
+                    </h3>
+                    <button
+                      (click)="viewRoom(room.roomId)"
+                      class="inline-flex items-center gap-1 text-[#00C897] text-xs font-medium hover:underline mt-2"
+                    >
+                      Xem chi tiết
+                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </th>
+            </ng-container>
+          </tr>
+        </thead>
+
+        <!-- Body -->
+        <tbody class="divide-y divide-gray-100">
+
+          <!-- Giá thuê -->
+          <tr class="hover:bg-gray-50 transition">
+            <td class="px-6 py-4 font-semibold text-gray-700 bg-gray-50 text-sm">💰 Giá thuê</td>
+            <ng-container *ngFor="let room of comparison.rooms">
+              <td
+                class="px-6 py-4 text-center border-l border-gray-100"
+                [ngClass]="{ 'bg-green-50': room.pricePerMonth === comparison.lowestPrice }"
+              >
+                <span
+                  class="font-bold text-base block"
+                  [ngClass]="{
+                    'text-[#00C897]': room.pricePerMonth === comparison.lowestPrice,
+                    'text-gray-800': room.pricePerMonth !== comparison.lowestPrice
+                  }"
+                >
+                  {{ formatPrice(room.pricePerMonth) }}/tháng
+                </span>
+                <span
+                  *ngIf="room.pricePerMonth === comparison.lowestPrice"
+                  class="inline-block text-[10px] bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full mt-1"
+                >
+                  Rẻ nhất
+                </span>
+              </td>
+            </ng-container>
+          </tr>
+
+          <!-- Diện tích -->
+          <tr class="hover:bg-gray-50 transition">
+            <td class="px-6 py-4 font-semibold text-gray-700 bg-gray-50 text-sm">📐 Diện tích</td>
+            <ng-container *ngFor="let room of comparison.rooms">
+              <td
+                class="px-6 py-4 text-center border-l border-gray-100"
+                [ngClass]="{ 'bg-blue-50': room.areaSize === comparison.largestArea }"
+              >
+                <span
+                  class="font-semibold block"
+                  [ngClass]="{
+                    'text-blue-600': room.areaSize === comparison.largestArea,
+                    'text-gray-800': room.areaSize !== comparison.largestArea
+                  }"
+                >
+                  {{ room.areaSize }}m²
+                </span>
+                <span
+                  *ngIf="room.areaSize === comparison.largestArea"
+                  class="inline-block text-[10px] bg-blue-100 text-blue-700 font-semibold px-2 py-0.5 rounded-full mt-1"
+                >
+                  Rộng nhất
+                </span>
+              </td>
+            </ng-container>
+          </tr>
+
+          <!-- Sức chứa -->
+          <tr class="hover:bg-gray-50 transition">
+            <td class="px-6 py-4 font-semibold text-gray-700 bg-gray-50 text-sm">👥 Sức chứa</td>
+            <ng-container *ngFor="let room of comparison.rooms">
+              <td class="px-6 py-4 text-center border-l border-gray-100 text-gray-700">
+                {{ room.capacity }} người
+              </td>
+            </ng-container>
+          </tr>
+
+          <!-- Đánh giá -->
+          <tr class="hover:bg-gray-50 transition">
+            <td class="px-6 py-4 font-semibold text-gray-700 bg-gray-50 text-sm">⭐ Đánh giá</td>
+            <ng-container *ngFor="let room of comparison.rooms">
+              <td class="px-6 py-4 text-center border-l border-gray-100">
+                <ng-container *ngIf="room.totalReviews > 0; else noReview">
+                  <span class="text-amber-400 font-bold">★</span>
+                  <span class="font-semibold text-gray-900 ml-1">{{ room.averageRating?.toFixed(1) }}</span>
+                  <span class="text-gray-400 text-xs ml-1">({{ room.totalReviews }} đánh giá)</span>
+                </ng-container>
+                <ng-template #noReview>
+                  <span class="text-gray-400 text-xs italic">Chưa có đánh giá</span>
+                </ng-template>
+              </td>
+            </ng-container>
+          </tr>
+
+          <!-- Xác thực -->
+          <tr class="hover:bg-gray-50 transition">
+            <td class="px-6 py-4 font-semibold text-gray-700 bg-gray-50 text-sm">✅ Xác thực</td>
+            <ng-container *ngFor="let room of comparison.rooms">
+              <td class="px-6 py-4 text-center border-l border-gray-100">
+                <span
+                  class="px-3 py-1 rounded-full text-xs font-semibold"
+                  [ngClass]="{
+                    'bg-green-100 text-green-700': room.isVerified,
+                    'bg-gray-100 text-gray-500': !room.isVerified
+                  }"
+                >
+                  {{ room.isVerified ? '✓ Đã xác thực' : '✗ Chưa xác thực' }}
+                </span>
+              </td>
+            </ng-container>
+          </tr>
+
+          <!-- Chủ nhà -->
+          <tr class="hover:bg-gray-50 transition">
+            <td class="px-6 py-4 font-semibold text-gray-700 bg-gray-50 text-sm">🏠 Chủ nhà</td>
+            <ng-container *ngFor="let room of comparison.rooms">
+              <td class="px-6 py-4 text-center border-l border-gray-100">
+                <div class="flex items-center justify-center gap-2">
+                  <img
+                    *ngIf="room.landlordAvatar"
+                    [src]="room.landlordAvatar"
+                    class="w-8 h-8 rounded-full object-cover border border-gray-200"
+                  />
+                  <div
+                    *ngIf="!room.landlordAvatar"
+                    class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center"
+                  >
+                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                  <span class="text-sm text-gray-700">{{ room.landlordName }}</span>
+                </div>
+              </td>
+            </ng-container>
+          </tr>
+
+          <!-- Tiện nghi -->
+          <tr class="hover:bg-gray-50 transition">
+            <td class="px-6 py-4 font-semibold text-gray-700 bg-gray-50 text-sm align-top pt-5">🛋️ Tiện nghi</td>
+            <ng-container *ngFor="let room of comparison.rooms">
+              <td class="px-6 py-4 border-l border-gray-100 align-top">
+                <div class="flex flex-wrap gap-1 justify-center">
+                  <ng-container *ngIf="room.amenities && room.amenities.length > 0; else noAmenities">
+                    <span
+                      *ngFor="let amenity of room.amenities.slice(0, 5)"
+                      class="bg-gray-100 text-gray-700 px-2 py-1 rounded-md text-xs"
+                    >
+                      {{ amenity.amenityName }}
+                    </span>
+                    <span *ngIf="room.amenities.length > 5" class="text-gray-400 text-xs mt-1 w-full text-center">
+                      +{{ room.amenities.length - 5 }} tiện nghi khác
+                    </span>
+                  </ng-container>
+                  <ng-template #noAmenities>
+                    <span class="text-gray-400 text-xs italic">Chưa cập nhật</span>
+                  </ng-template>
+                </div>
+              </td>
+            </ng-container>
+          </tr>
+
+          <!-- Địa chỉ -->
+          <tr class="hover:bg-gray-50 transition">
+            <td class="px-6 py-4 font-semibold text-gray-700 bg-gray-50 text-sm">📍 Địa chỉ</td>
+            <ng-container *ngFor="let room of comparison.rooms">
+              <td class="px-6 py-4 text-center border-l border-gray-100 text-sm text-gray-600">
+                {{ room.address || 'Chưa cập nhật' }}
+              </td>
+            </ng-container>
+          </tr>
+
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
