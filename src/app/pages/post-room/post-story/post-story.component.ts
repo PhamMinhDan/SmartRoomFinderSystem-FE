@@ -399,7 +399,7 @@ export class PostRoomComponent implements OnInit {
       this.toastService.show('Đăng tin thành công !', 'success');
 
       setTimeout(() => {
-        this.router.navigate(['/my-posts', res.data.roomId]);
+        this.router.navigate(['/my-posts']);
       }, 500);
     } catch (err: any) {
       console.error('Submit error:', err);

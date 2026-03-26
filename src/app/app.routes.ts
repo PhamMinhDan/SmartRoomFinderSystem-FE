@@ -78,6 +78,11 @@ export const routes: Routes = [
         pathMatch: 'full',
       },
       {
+        path: 'profile',
+        component: ProfileComponent,
+        title: 'Thông tin cá nhân - Admin',
+      },
+      {
         path: 'dashboard',
         title: 'Dashboard - RoomFinder Admin',
         loadComponent: () =>
@@ -110,6 +115,12 @@ export const routes: Routes = [
         title: 'Người dùng - RoomFinder Admin',
         loadComponent: () =>
           import('./pages/admin/users/users.component').then((m) => m.UsersComponent),
+      },
+      // ── Chi tiết phòng trong admin context ──────────────────────
+      {
+        path: 'room-detail/:id',
+        title: 'Chi tiết phòng - RoomFinder Admin',
+        component: RoomDetailComponent,
       },
     ],
   },
