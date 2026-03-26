@@ -196,13 +196,6 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     this.http.get<any>(`${environment.apiUrl}/rooms/${id}`).subscribe({
       next: (res) => {
         this.room = res?.data ?? res;
-        this.http.post(`${environment.apiUrl}/rooms/${id}/view`, {}).subscribe({
-          next: (view: any) => {
-            if (this.room) {
-              this.room.viewCount = view?.data ?? this.room.viewCount + 1;
-            }
-          },
-        });
         this.loading = false;
         this.loadReviews(true);
         this.loadSimilarRooms();
