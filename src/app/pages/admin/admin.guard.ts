@@ -11,7 +11,6 @@ export class AdminGuard implements CanActivate {
 
   canActivate(): boolean {
     const user = this.authService.currentUserValue;
-    console.log(this.authService.currentUserValue);
 
     if (!user) {
       this.router.navigate(['/']);

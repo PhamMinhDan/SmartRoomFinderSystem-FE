@@ -85,7 +85,11 @@
     <!-- Navigation items -->
     <div class="panel-body">
       <!-- Thông tin cá nhân -->
-      <a routerLink="/profile" (click)="close()" class="panel-item">
+      <a
+        [routerLink]="isAdmin ? '/admin/profile' : '/profile'"
+        (click)="close()"
+        class="panel-item"
+      >
         <span class="item-icon icon-profile">
           <svg
             viewBox="0 0 24 24"
