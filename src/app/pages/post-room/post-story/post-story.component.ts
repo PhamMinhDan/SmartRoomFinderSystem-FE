@@ -14,6 +14,7 @@ import { environment } from '../../../../environments/environment';
 import { firstValueFrom } from 'rxjs';
 import mapboxgl from 'mapbox-gl';
 import { LocationService } from '../../../services/location.service';
+import { ToastService } from '../../../components/toast/toast.service';
 interface Amenity {
   amenityId: number;
   amenityName: string;
@@ -82,6 +83,7 @@ export class PostRoomComponent implements OnInit {
     private http: HttpClient,
     private locationService: LocationService,
     private authService: AuthService,
+    private toastService: ToastService,
     @Inject(PLATFORM_ID) private platformId: Object,
   ) {}
 
@@ -394,9 +396,11 @@ export class PostRoomComponent implements OnInit {
       };
 
       const res: any = await firstValueFrom(this.http.post(`${environment.apiUrl}/rooms`, payload));
-      this.router.navigate(['/rooms', res.data.roomId], {
-        queryParams: { posted: 'success' },
-      });
+      this.toastService.show('Đăng tin thành công !', 'success');
+
+      setTimeout(() => {
+        this.router.navigate(['/my-posts', res.data.roomId]);
+      }, 500);
     } catch (err: any) {
       console.error('Submit error:', err);
 

@@ -590,160 +590,176 @@
           </div>
 
           <!-- ── Write Review Form (RENTER only, not own room) ── -->
-          <div *ngIf="isRenter && !isMyRoom" class="border-t border-slate-100 pt-5">
-            <h3 class="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
-              <span class="w-1 h-4 bg-[#00C897] rounded-full inline-block"></span>
-              Bình luận
-            </h3>
+          <div class="border-t border-slate-100 pt-5">
+            <div *ngIf="!authService.currentUserValue" class="text-center py-6">
+              <p class="text-slate-500 mb-3">Vui lòng đăng nhập để bình luận</p>
 
-            <!-- Star selector -->
-            <div class="mb-2">
-              <p class="text-xs text-slate-500 mb-2">Số sao</p>
+              <button
+                (click)="goToLogin()"
+                class="px-5 py-2 bg-[#00C897] text-white rounded-lg hover:bg-[#00a87f] transition"
+              >
+                Đăng nhập ngay
+              </button>
+            </div>
 
-              <div class="flex items-center gap-3">
-                <div class="flex gap-1">
-                  <button
-                    *ngFor="let star of [1, 2, 3, 4, 5]"
-                    (click)="selectRating(star)"
-                    (mouseenter)="setHoverRating(star)"
-                    (mouseleave)="clearHoverRating()"
-                    class="text-2xl transition hover:scale-110"
-                    [class.text-amber-400]="getDisplayRating(star)"
-                    [class.text-slate-300]="!getDisplayRating(star)"
-                  >
-                    ★
-                  </button>
+            <div
+              *ngIf="authService.currentUserValue && isRenter && !isMyRoom"
+              class="border-t border-slate-100 pt-5"
+            >
+              <h3 class="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
+                <span class="w-1 h-4 bg-[#00C897] rounded-full inline-block"></span>
+                Bình luận
+              </h3>
+
+              <!-- Star selector -->
+              <div class="mb-2">
+                <p class="text-xs text-slate-500 mb-2">Số sao</p>
+
+                <div class="flex items-center gap-3">
+                  <div class="flex gap-1">
+                    <button
+                      *ngFor="let star of [1, 2, 3, 4, 5]"
+                      (click)="selectRating(star)"
+                      (mouseenter)="setHoverRating(star)"
+                      (mouseleave)="clearHoverRating()"
+                      class="text-2xl transition hover:scale-110"
+                      [class.text-amber-400]="getDisplayRating(star)"
+                      [class.text-slate-300]="!getDisplayRating(star)"
+                    >
+                      ★
+                    </button>
+                  </div>
+
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="5"
+                    [(ngModel)]="pendingRating"
+                    (input)="onRatingInput()"
+                    class="w-10 px-2 py-1 border rounded text-center text-sm focus:border-[#00C897] outline-none"
+                  />
+
+                  <span class="text-sm text-gray-500">/5</span>
                 </div>
-
-                <input
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  max="5"
-                  [(ngModel)]="pendingRating"
-                  (input)="onRatingInput()"
-                  class="w-10 px-2 py-1 border rounded text-center text-sm focus:border-[#00C897] outline-none"
-                />
-
-                <span class="text-sm text-gray-500">/5</span>
               </div>
-            </div>
 
-            <!-- Comment input -->
-            <div class="mb-3 mt-3">
-              <p class="text-xs text-slate-500 mb-2">Đánh giá</p>
-              <input
-                [(ngModel)]="commentText"
-                type="text"
-                placeholder="Chia sẻ trải nghiệm của bạn..."
-                class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#00C897]/30 focus:border-[#00C897]"
-              />
-            </div>
+              <!-- Comment input -->
+              <div class="mb-3 mt-3">
+                <p class="text-xs text-slate-500 mb-2">Đánh giá</p>
+                <input
+                  [(ngModel)]="commentText"
+                  type="text"
+                  placeholder="Chia sẻ trải nghiệm của bạn..."
+                  class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#00C897]/30 focus:border-[#00C897]"
+                />
+              </div>
 
-            <!-- Image upload (max 3) -->
-            <div class="mb-4">
-              <p class="text-xs text-slate-500 mb-2">
-                Thêm ảnh <span class="text-slate-400">(tối đa 3 ảnh)</span>
-              </p>
-              <div class="flex gap-2 flex-wrap">
-                <!-- Uploaded image previews -->
-                <div
-                  *ngFor="let img of reviewImagePreviews; let i = index"
-                  class="relative w-20 h-20 rounded-xl overflow-hidden border-2 border-slate-200 flex-shrink-0 bg-slate-100"
-                >
-                  <img [src]="img" class="w-full h-full object-cover" />
-                  <!-- Upload spinner -->
+              <!-- Image upload (max 3) -->
+              <div class="mb-4">
+                <p class="text-xs text-slate-500 mb-2">
+                  Thêm ảnh <span class="text-slate-400">(tối đa 3 ảnh)</span>
+                </p>
+                <div class="flex gap-2 flex-wrap">
+                  <!-- Uploaded image previews -->
                   <div
-                    *ngIf="reviewImageUploading[i]"
-                    class="absolute inset-0 bg-black/40 flex items-center justify-center"
+                    *ngFor="let img of reviewImagePreviews; let i = index"
+                    class="relative w-20 h-20 rounded-xl overflow-hidden border-2 border-slate-200 flex-shrink-0 bg-slate-100"
                   >
-                    <svg class="w-5 h-5 text-white animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle
-                        class="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        stroke-width="4"
-                      />
+                    <img [src]="img" class="w-full h-full object-cover" />
+                    <!-- Upload spinner -->
+                    <div
+                      *ngIf="reviewImageUploading[i]"
+                      class="absolute inset-0 bg-black/40 flex items-center justify-center"
+                    >
+                      <svg class="w-5 h-5 text-white animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle
+                          class="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          stroke-width="4"
+                        />
+                        <path
+                          class="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                        />
+                      </svg>
+                    </div>
+                    <!-- Remove button -->
+                    <button
+                      *ngIf="!reviewImageUploading[i]"
+                      (click)="removeReviewImage(i)"
+                      class="absolute top-0.5 right-0.5 w-5 h-5 bg-black/60 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-500 transition leading-none"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <!-- Add image button -->
+                  <label
+                    *ngIf="reviewImagePreviews.length < 3"
+                    class="w-20 h-20 rounded-xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center cursor-pointer hover:border-[#00C897] hover:bg-emerald-50 transition flex-shrink-0"
+                  >
+                    <svg
+                      class="w-6 h-6 text-slate-400 mb-0.5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
                       <path
-                        class="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
                       />
                     </svg>
-                  </div>
-                  <!-- Remove button -->
-                  <button
-                    *ngIf="!reviewImageUploading[i]"
-                    (click)="removeReviewImage(i)"
-                    class="absolute top-0.5 right-0.5 w-5 h-5 bg-black/60 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-500 transition leading-none"
-                  >
-                    ✕
-                  </button>
-                </div>
-
-                <!-- Add image button -->
-                <label
-                  *ngIf="reviewImagePreviews.length < 3"
-                  class="w-20 h-20 rounded-xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center cursor-pointer hover:border-[#00C897] hover:bg-emerald-50 transition flex-shrink-0"
-                >
-                  <svg
-                    class="w-6 h-6 text-slate-400 mb-0.5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                    <span class="text-[10px] text-slate-400">Thêm ảnh</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      class="hidden"
+                      (change)="onReviewImagesSelected($event)"
                     />
-                  </svg>
-                  <span class="text-[10px] text-slate-400">Thêm ảnh</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    class="hidden"
-                    (change)="onReviewImagesSelected($event)"
-                  />
-                </label>
+                  </label>
+                </div>
               </div>
-            </div>
 
-            <!-- Error -->
-            <p *ngIf="reviewError" class="text-red-500 text-xs mb-3">{{ reviewError }}</p>
+              <!-- Error -->
+              <p *ngIf="reviewError" class="text-red-500 text-xs mb-3">{{ reviewError }}</p>
 
-            <!-- Submit -->
-            <button
-              (click)="submitReview()"
-              [disabled]="submittingReview || reviewImageUploading.includes(true)"
-              class="px-6 py-2.5 bg-[#00C897] text-white rounded-xl font-semibold text-sm hover:bg-[#00a87f] transition disabled:opacity-60 flex items-center gap-2"
-            >
-              <svg
-                *ngIf="submittingReview"
-                class="w-4 h-4 animate-spin"
-                fill="none"
-                viewBox="0 0 24 24"
+              <!-- Submit -->
+              <button
+                (click)="submitReview()"
+                [disabled]="submittingReview || reviewImageUploading.includes(true)"
+                class="px-6 py-2.5 bg-[#00C897] text-white rounded-xl font-semibold text-sm hover:bg-[#00a87f] transition disabled:opacity-60 flex items-center gap-2"
               >
-                <circle
-                  class="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  stroke-width="4"
-                />
-                <path
-                  class="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                />
-              </svg>
-              {{ submittingReview ? 'Đang gửi...' : 'Thêm đánh giá +300 xu' }}
-            </button>
+                <svg
+                  *ngIf="submittingReview"
+                  class="w-4 h-4 animate-spin"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    class="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="4"
+                  />
+                  <path
+                    class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  />
+                </svg>
+                {{ submittingReview ? 'Đang gửi...' : 'Thêm đánh giá +300 xu' }}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1073,3 +1089,8 @@
     <app-report-modal [roomId]="room!.roomId" (closed)="showReportModal = false"></app-report-modal>
   </div>
 </div>
+<app-login-modal
+  *ngIf="isLoginOpen"
+  [isLoginOpen]="isLoginOpen"
+  (close)="isLoginOpen = false"
+></app-login-modal>

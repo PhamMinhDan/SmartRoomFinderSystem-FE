@@ -4,6 +4,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
+import { ToastService } from '../components/toast/toast.service';
 
 export interface AddressResponse {
   address_id: number;
@@ -57,9 +58,11 @@ export class AuthService {
   private currentUserSubject: BehaviorSubject<UserResponse | null>;
   public currentUser: Observable<UserResponse | null>;
   private isBrowser: boolean;
+  private redirectUrl: string | null = null;
 
   constructor(
     private http: HttpClient,
+    private toast: ToastService,
     @Inject(PLATFORM_ID) platformId: Object,
   ) {
     this.isBrowser = isPlatformBrowser(platformId);
@@ -95,6 +98,18 @@ export class AuthService {
     if (this.isBrowser) {
       localStorage.removeItem(key);
     }
+  }
+
+  setRedirectUrl(url: string) {
+    this.redirectUrl = url;
+  }
+
+  getRedirectUrl(): string | null {
+    return this.redirectUrl;
+  }
+
+  clearRedirectUrl() {
+    this.redirectUrl = null;
   }
 
   loginWithGoogle(idToken: string): Observable<ApiResponse<AuthGoogleResponse>> {
@@ -216,5 +231,21 @@ export class AuthService {
         },
       });
     });
+  }
+
+  requireLogin(openLoginModal: () => void, action?: () => void, currentUrl?: string): boolean {
+    if (!this.currentUserValue) {
+      this.toast.show('Vui lòng đăng nhập để sử dụng tính năng này', 'info');
+
+      if (currentUrl) {
+        this.setRedirectUrl(currentUrl);
+      }
+
+      openLoginModal();
+      return false;
+    }
+
+    action?.();
+    return true;
   }
 }

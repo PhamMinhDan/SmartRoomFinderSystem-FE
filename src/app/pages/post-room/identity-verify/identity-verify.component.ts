@@ -55,6 +55,11 @@ export class IdentityVerifyComponent implements OnInit, OnDestroy {
     });
 
     const user = this.authService.currentUserValue;
+    if (user?.phone_number) {
+      this.verifyForm.patchValue({
+        phoneNumber: user.phone_number,
+      });
+    }
     if (user?.identity_verified) {
       this.alreadyVerified = true;
     }
