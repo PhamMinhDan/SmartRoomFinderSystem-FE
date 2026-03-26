@@ -11,7 +11,6 @@ export class FavouriteService {
 
   constructor(private http: HttpClient) {}
 
-  /** Load all saved roomIds for the current user into the BehaviorSubject */
   loadSavedIds(): void {
     this.http.get<any>(`${environment.apiUrl}/favourites/ids`).subscribe({
       next: (res) => {

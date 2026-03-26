@@ -8,6 +8,7 @@ import { environment } from '../../../environments/environment';
 import { ToastService } from '../../components/toast/toast.service';
 import { ReportModalComponent } from '../reportmodal/report-modal.component';
 import mapboxgl from 'mapbox-gl';
+import { LoginModalComponent } from '../../components/login-modal/login-modal.component';
 
 // ── Interfaces ────────────────────────────────────────────────────
 interface RoomImage {
@@ -73,7 +74,7 @@ interface ReviewItem {
 @Component({
   selector: 'app-room-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, ReportModalComponent],
+  imports: [CommonModule, RouterModule, FormsModule, ReportModalComponent, LoginModalComponent],
   templateUrl: './roomdetail.component.html',
   styleUrl: './roomdetail.component.css',
 })
@@ -144,6 +145,7 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // Report modal
   showReportModal = false;
+  isLoginOpen = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -390,10 +392,8 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   // ── Submit review ────────────────────────────────────────────
   submitReview() {
     if (!this.room) return;
-    if (!this.authService.currentUserValue) {
-      this.router.navigate(['/login']);
+    if (!this.authService.requireLogin(() => (this.isLoginOpen = true), undefined, this.router.url))
       return;
-    }
     if (this.pendingRating < 1 || this.pendingRating > 5) {
       this.reviewError = 'Vui lòng chọn số sao từ 1 đến 5.';
       return;
@@ -630,15 +630,20 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // ── Actions ───────────────────────────────────────────────────
   contactLandlord() {
-    if (!this.room) return;
-    this.router.navigate(['/chat'], {
-      queryParams: {
-        roomId: this.room.roomId,
-        receiverId: this.room.landlordId,
-        partnerName: this.room.landlordName,
-        partnerAvatar: this.room.landlordAvatar,
+    this.authService.requireLogin(
+      () => (this.isLoginOpen = true),
+      () => {
+        this.router.navigate(['/chat'], {
+          queryParams: {
+            roomId: this.room?.roomId,
+            receiverId: this.room?.landlordId,
+            partnerName: this.room?.landlordName,
+            partnerAvatar: this.room?.landlordAvatar,
+          },
+        });
       },
-    });
+      this.router.url,
+    );
   }
 
   editRoom() {
@@ -674,7 +679,13 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   reportRoom() {
-    this.showReportModal = true;
+    this.authService.requireLogin(
+      () => (this.isLoginOpen = true),
+      () => {
+        this.showReportModal = true;
+      },
+      this.router.url,
+    );
   }
 
   togglePhone() {
@@ -800,5 +811,12 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   }
   get canContact(): boolean {
     return !this.isMyRoom;
+  }
+  goToLogin() {
+    this.isLoginOpen = true;
+  }
+
+  onLoginSuccess() {
+    this.isLoginOpen = false;
   }
 }

@@ -20,6 +20,9 @@ import {
 import { AuthService, UserResponse } from '../../services/auth.service';
 import { AddressService, AddressResponse } from '../../services/address.service';
 import { LocationService } from '../../services/location.service';
+import mapboxgl from 'mapbox-gl';
+import { ToastService } from '../../components/toast/toast.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-profile',
@@ -41,10 +44,11 @@ export class ProfileComponent implements OnInit, AfterViewInit {
   addressSuccess = '';
 
   // Map
-  map: any;
-  marker: any;
-  private L: any;
-  private redIcon: any;
+  private map: mapboxgl.Map | null = null;
+  private marker: mapboxgl.Marker | null = null;
+
+  private MAPBOX_TOKEN =
+    'pk.eyJ1IjoibHVvbmcyMyIsImEiOiJjbW1raDNueWcxZGJ3MnFwemg1aTI2cXF1In0.P4Zv9Up4zZaXXn7wG3ue4g';
 
   cities: any[] = [];
   districts: any[] = [];
@@ -62,6 +66,11 @@ export class ProfileComponent implements OnInit, AfterViewInit {
   showDistrictDropdown = false;
   showWardDropdown = false;
 
+  showEditProfile = false;
+  editForm!: FormGroup;
+  previewAvatar: string | null = null;
+  uploading = false;
+
   constructor(
     private authService: AuthService,
     private addressService: AddressService,
@@ -70,6 +79,7 @@ export class ProfileComponent implements OnInit, AfterViewInit {
     private http: HttpClient,
     private locationService: LocationService,
     private elementRef: ElementRef,
+    private toastService: ToastService,
     @Inject(PLATFORM_ID) private platformId: Object,
   ) {}
 
@@ -106,6 +116,13 @@ export class ProfileComponent implements OnInit, AfterViewInit {
     }
 
     this.loadAddress();
+
+    this.editForm = this.fb.group({
+      fullName: ['', Validators.required],
+      phoneNumber: [''],
+      bio: [''],
+      avatarUrl: [''],
+    });
   }
 
   @HostListener('document:click', ['$event'])
@@ -219,16 +236,14 @@ export class ProfileComponent implements OnInit, AfterViewInit {
 
   async ngAfterViewInit(): Promise<void> {
     if (!isPlatformBrowser(this.platformId)) return;
-    await this.initMap(21.0285, 105.8542);
 
-    if (this.address?.latitude != null && this.address?.longitude != null) {
-      this.setMarker(
-        this.address.latitude,
-        this.address.longitude,
-        this.buildDisplayAddress(this.address),
-      );
-    } else {
-      console.log(' [DB] Không có tọa độ trong database, dùng mặc định Hà Nội: 21.0285, 105.8542');
+    const lat = this.address?.latitude ?? 21.0285;
+    const lng = this.address?.longitude ?? 105.8542;
+
+    this.initMap(lat, lng);
+
+    if (!this.address?.latitude) {
+      console.log(' [DB] Không có tọa độ, dùng mặc định Hà Nội');
     }
   }
 
@@ -251,7 +266,7 @@ export class ProfileComponent implements OnInit, AfterViewInit {
         wardName: user.address.ward_name,
       });
 
-      if (user.address.latitude != null && user.address.longitude != null && this.map && this.L) {
+      if (user.address.latitude != null && user.address.longitude != null && this.map) {
         this.setMarker(
           user.address.latitude,
           user.address.longitude,
@@ -391,53 +406,44 @@ export class ProfileComponent implements OnInit, AfterViewInit {
 
   async initMap(lat: number, lng: number) {
     if (!isPlatformBrowser(this.platformId)) return;
-    this.L = await import('leaflet');
 
-    this.redIcon = this.L.icon({
-      iconUrl:
-        'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
-      shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-      iconSize: [25, 41],
-      iconAnchor: [12, 41],
-      popupAnchor: [1, -34],
-      shadowSize: [40, 40],
-    });
+    mapboxgl.accessToken = this.MAPBOX_TOKEN;
 
     if (this.map) {
-      this.map.setView([lat, lng], 15);
-      return;
+      this.map.remove();
     }
 
-    this.map = this.L.map('profileMap').setView([lat, lng], 15);
+    this.map = new mapboxgl.Map({
+      container: 'profileMap',
+      style: 'mapbox://styles/mapbox/streets-v11',
+      center: [lng, lat],
+      zoom: 14,
+    });
 
-    this.L.tileLayer(
-      'https://api.mapbox.com/styles/v1/mapbox/streets-v11/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoibHVvbmcyMyIsImEiOiJjbW1raDNueWcxZGJ3MnFwemg1aTI2cXF1In0.P4Zv9Up4zZaXXn7wG3ue4g',
-      {
-        attribution: '© Mapbox © OpenStreetMap',
-        tileSize: 512,
-        zoomOffset: -1,
-      },
-    ).addTo(this.map);
-
-    this.marker = this.L.marker([lat, lng], { icon: this.redIcon })
-      .addTo(this.map)
-      .bindPopup('Vị trí của bạn')
-      .openPopup();
+    // marker
+    this.marker = new mapboxgl.Marker({ color: 'red' }).setLngLat([lng, lat]).addTo(this.map);
   }
 
-  setMarker(lat: number, lng: number, text: string) {
-    if (!this.map || !this.L) return;
-
-    this.map.setView([lat, lng], 15);
+  setMarker(lat: number, lng: number, popupText?: string) {
+    if (!this.map) return;
 
     if (this.marker) {
-      this.map.removeLayer(this.marker);
+      this.marker.remove();
     }
 
-    this.marker = this.L.marker([lat, lng], { icon: this.redIcon })
-      .addTo(this.map)
-      .bindPopup(text)
-      .openPopup();
+    this.marker = new mapboxgl.Marker({ color: 'red' }).setLngLat([lng, lat]);
+
+    if (popupText) {
+      const popup = new mapboxgl.Popup({ offset: 25 }).setText(popupText);
+      this.marker.setPopup(popup);
+    }
+
+    this.marker.addTo(this.map);
+
+    this.map.flyTo({
+      center: [lng, lat],
+      zoom: 15,
+    });
   }
 
   useCurrentLocation() {
@@ -463,5 +469,65 @@ export class ProfileComponent implements OnInit, AfterViewInit {
       return 'Chưa cập nhật';
     }
     return String(value);
+  }
+
+  openEditProfile() {
+    if (!this.user) return;
+
+    this.editForm.patchValue({
+      fullName: this.user.full_name,
+      phoneNumber: this.user.phone_number,
+      bio: this.user.bio,
+      avatarUrl: this.user.avatar_url,
+    });
+
+    this.previewAvatar = this.user.avatar_url || null;
+
+    this.showEditProfile = true;
+  }
+
+  onFileSelected(event: any) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.previewAvatar = reader.result as string;
+    };
+    reader.readAsDataURL(file);
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    this.uploading = true;
+
+    this.http.post<any>(`${environment.apiUrl}/upload`, formData).subscribe({
+      next: (res) => {
+        this.editForm.patchValue({
+          avatarUrl: res.url,
+        });
+        this.uploading = false;
+      },
+      error: () => {
+        this.uploading = false;
+        this.toastService.show('Upload ảnh thất bại', 'error');
+      },
+    });
+  }
+
+  submitEditProfile() {
+    if (this.editForm.invalid) return;
+
+    this.http.put(`${environment.apiUrl}/user/update`, this.editForm.value).subscribe({
+      next: () => {
+        this.toastService.show('Cập nhật thành công', 'success');
+        this.showEditProfile = false;
+
+        this.authService.getCurrentUser().subscribe();
+      },
+      error: () => {
+        this.toastService.show('Cập nhật thất bại', 'error');
+      },
+    });
   }
 }

@@ -21,6 +21,10 @@ interface Room {
   expiredAt?: string;
   postTier?: string;
   isApproved: boolean;
+  isActive: boolean;
+  displayUntil?: string;
+
+  hiddenReason?: string;
   images: RoomImage[];
 }
 
@@ -63,13 +67,28 @@ export class ManagePostsComponent implements OnInit, OnDestroy {
   activeTab = 'all';
   openMenuId: number | null = null;
 
+  showHidePopup = false;
+  hideRoomId: number | null = null;
+
+  selectedReason = '';
+  otherReason = '';
+
+  hideReasons = [
+    'Đã cho thuê',
+    'Thông tin không còn đúng',
+    'Đăng nhầm',
+    'Không muốn cho thuê nữa',
+    'Khác',
+  ];
+
   // ── Tabs ──────────────────────────────────────────
   tabs: Tab[] = [
     { key: 'all', label: 'Đang hiển thị', count: 0 },
     { key: 'expired', label: 'Hết hạn', count: 0 },
     { key: 'rejected', label: 'Bị từ chối', count: 0 },
-    { key: 'inbox', label: 'Tin nhắn', count: 0 },
+    // { key: 'inbox', label: 'Tin nhắn', count: 0 },
     { key: 'pending', label: 'Chờ duyệt', count: 0 },
+    { key: 'hidden', label: 'Đã ẩn', count: 0 },
   ];
 
   // ── Calendar ──────────────────────────────────────
@@ -89,6 +108,17 @@ export class ManagePostsComponent implements OnInit, OnDestroy {
   deleteRoomId: number | null = null;
   deleteReason = '';
   deleteOtherReason = '';
+
+  // Extend popup
+  showExtendPopup = false;
+  extendRoomId: number | null = null;
+  selectedPlan = 'basic';
+
+  readonly extendPlans = [
+    { key: 'basic', label: 'Cơ bản | 15 ngày', price: 0 },
+    { key: 'advanced', label: 'Nâng cao | 30 ngày', price: 30000 },
+    { key: 'vip', label: 'VIP | 60 ngày', price: 50000 },
+  ];
 
   deleteReasons = [
     'Đã cho thuê',
@@ -135,6 +165,7 @@ export class ManagePostsComponent implements OnInit, OnDestroy {
     this.http.get<any>(`${environment.apiUrl}/rooms/my`).subscribe({
       next: (res) => {
         this.rooms = res.data?.content ?? [];
+        console.log('Loaded rooms:', this.rooms);
         this.updateTabCounts();
         this.applyFilters();
         this.loading = false;
@@ -146,9 +177,25 @@ export class ManagePostsComponent implements OnInit, OnDestroy {
     });
   }
 
+  openHidePopup(id: number) {
+    this.hideRoomId = id;
+    this.selectedReason = '';
+    this.otherReason = '';
+    this.showHidePopup = true;
+    this.openMenuId = null;
+  }
+
   updateTabCounts() {
-    this.tabs[0].count = this.rooms.filter((r) => r.isApproved).length;
-    this.tabs[4].count = this.rooms.filter((r) => !r.isApproved).length;
+    const now = new Date();
+    this.tabs[0].count = this.rooms.filter((r) => r.isApproved && r.isActive).length;
+    this.tabs[1].count = this.rooms.filter(
+      (r) => r.displayUntil && new Date(r.displayUntil) < now,
+    ).length;
+
+    // Bị từ chối (tạm = chưa duyệt)
+    this.tabs[2].count = this.rooms.filter((r) => !r.isApproved).length;
+    this.tabs[3].count = this.rooms.filter((r) => !r.isApproved).length;
+    this.tabs[4].count = this.rooms.filter((r) => !r.isActive).length;
   }
 
   onSearch() {
@@ -157,6 +204,7 @@ export class ManagePostsComponent implements OnInit, OnDestroy {
 
   applyFilters() {
     let list = [...this.rooms];
+    const now = new Date();
 
     if (this.searchQuery.trim()) {
       const q = this.searchQuery.toLowerCase();
@@ -165,13 +213,55 @@ export class ManagePostsComponent implements OnInit, OnDestroy {
       );
     }
 
-    if (this.activeTab === 'pending') {
+    if (this.activeTab === 'hidden') {
+      list = list.filter((r) => !r.isActive);
+    } else if (this.activeTab === 'expired') {
+      list = list.filter((r) => r.expiredAt && new Date(r.expiredAt) < now);
+    } else if (this.activeTab === 'rejected') {
+      list = list.filter((r) => !r.isApproved && r.displayUntil == null);
+    } else if (this.activeTab === 'pending') {
       list = list.filter((r) => !r.isApproved);
     } else if (this.activeTab === 'all') {
-      list = list.filter((r) => r.isApproved);
+      list = list.filter((r) => r.isApproved && r.isActive);
     }
 
     this.filteredRooms = list;
+  }
+
+  confirmHide() {
+    if (!this.selectedReason) {
+      this.toastService.show('Vui lòng chọn lý do', 'warning');
+      return;
+    }
+
+    const reason = this.selectedReason === 'Khác' ? this.otherReason : this.selectedReason;
+
+    this.http
+      .patch(`${environment.apiUrl}/rooms/${this.hideRoomId}/active`, {
+        isActive: false,
+        reason: reason,
+      })
+      .subscribe({
+        next: () => {
+          this.toastService.show('Đã ẩn tin', 'success');
+          this.showHidePopup = false;
+          this.loadRooms();
+        },
+        error: () => {
+          this.toastService.show('Ẩn tin thất bại', 'error');
+        },
+      });
+  }
+
+  unhideRoom(id: number) {
+    this.http
+      .patch(`${environment.apiUrl}/rooms/${id}/active`, {
+        isActive: true,
+      })
+      .subscribe(() => {
+        this.toastService.show('Đã hiển thị lại', 'success');
+        this.loadRooms();
+      });
   }
 
   openDeletePopup(id: number) {
@@ -216,8 +306,48 @@ export class ManagePostsComponent implements OnInit, OnDestroy {
     this.openMenuId = null;
   }
 
+  openExtendPopup(id: number) {
+    this.extendRoomId = id;
+    this.selectedPlan = 'basic';
+    this.showExtendPopup = true;
+    this.openMenuId = null;
+  }
+
+  confirmExtend() {
+    if (!this.extendRoomId) return;
+
+    const plan = this.extendPlans.find((p) => p.key === this.selectedPlan);
+
+    this.http
+      .patch(`${environment.apiUrl}/rooms/${this.extendRoomId}/extend`, {
+        days: this.getDaysFromPlan(this.selectedPlan),
+      })
+      .subscribe({
+        next: () => {
+          this.toastService.show(`Gia hạn "${plan?.label}" thành công`, 'success');
+          this.showExtendPopup = false;
+          this.loadRooms();
+        },
+        error: () => {
+          this.toastService.show('Gia hạn thất bại', 'error');
+        },
+      });
+  }
+  getDaysFromPlan(plan: string): number {
+    switch (plan) {
+      case 'basic':
+        return 15;
+      case 'advanced':
+        return 30;
+      case 'vip':
+        return 60;
+      default:
+        return 15;
+    }
+  }
+
   extendRoom(id: number) {
-    this.router.navigate(['/extend-room', id]);
+    this.openExtendPopup(id);
   }
 
   openMenu(id: number) {
@@ -333,5 +463,13 @@ export class ManagePostsComponent implements OnInit, OnDestroy {
     }
 
     return 'text-emerald-600';
+  }
+  isExpired(dateStr?: string): boolean {
+    if (!dateStr) return false;
+
+    const now = new Date();
+    const expire = new Date(dateStr);
+
+    return expire < now;
   }
 }

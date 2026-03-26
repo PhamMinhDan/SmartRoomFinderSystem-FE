@@ -70,12 +70,18 @@ export class LoginModalComponent implements OnInit {
                 this.isLoading = false;
 
                 const user = this.authService.currentUserValue;
-                const redirect = user?.role_name === 'ADMIN' ? '/admin' : '/';
+                const redirectUrl = this.authService.getRedirectUrl();
 
+                this.toast.show('Đăng nhập thành công !', 'success');
                 this.loginSuccess.emit();
                 this.closeModal();
 
-                this.router.navigate([redirect]);
+                if (user?.role_name === 'ADMIN') {
+                  this.router.navigate(['/admin']);
+                } else if (redirectUrl) {
+                  this.router.navigateByUrl(redirectUrl);
+                  this.authService.clearRedirectUrl();
+                }
               },
               error: () => {
                 this.isLoading = false;
