@@ -5,13 +5,13 @@ import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 
 const REASON_MAP: Record<string, string> = {
-  'Lừa đảo':                                  'FRAUD',
-  'Trùng lặp':                                 'DUPLICATE',
-  'Bất động sản đã cho thuê':                  'RENTED',
-  'Không liên lạc được':                       'UNREACHABLE',
+  'Lừa đảo': 'FRAUD',
+  'Trùng lặp': 'DUPLICATE',
+  'Bất động sản đã cho thuê': 'RENTED',
+  'Không liên lạc được': 'UNREACHABLE',
   'Thông tin bất động sản không đúng thực tế': 'WRONG_INFO',
-  'Thông tin người đăng không đúng thực tế':   'WRONG_POSTER',
-  'Lý do khác':                                'OTHER',
+  'Thông tin người đăng không đúng thực tế': 'WRONG_POSTER',
+  'Lý do khác': 'OTHER',
 };
 
 @Component({
@@ -24,6 +24,8 @@ const REASON_MAP: Record<string, string> = {
 export class ReportModalComponent {
   @Input() roomId!: number;
   @Input() isMobile = false;
+  @Input() targetId!: number | null;
+  @Input() type: 'ROOM' | 'REVIEW' = 'ROOM';
   @Output() closed = new EventEmitter<void>();
 
   selectedReason = '';
@@ -40,8 +42,12 @@ export class ReportModalComponent {
 
   constructor(private http: HttpClient) {}
 
-  get charCount(): number { return this.otherDetails.length; }
-  get isOverLimit(): boolean { return this.charCount > 500; }
+  get charCount(): number {
+    return this.otherDetails.length;
+  }
+  get isOverLimit(): boolean {
+    return this.charCount > 500;
+  }
 
   onSubmit(): void {
     const isOtherMissing = this.selectedReason === 'Lý do khác' && !this.otherDetails.trim();
@@ -54,8 +60,8 @@ export class ReportModalComponent {
 
     this.submitting = true;
     const payload = {
-      reason:        REASON_MAP[this.selectedReason],
-      details:       this.selectedReason === 'Lý do khác' ? this.otherDetails.trim() : null,
+      reason: REASON_MAP[this.selectedReason],
+      details: this.selectedReason === 'Lý do khác' ? this.otherDetails.trim() : null,
       reporterPhone: this.phone,
       reporterEmail: this.email,
     };
@@ -75,5 +81,7 @@ export class ReportModalComponent {
     });
   }
 
-  close(): void { this.closed.emit(); }
+  close(): void {
+    this.closed.emit();
+  }
 }

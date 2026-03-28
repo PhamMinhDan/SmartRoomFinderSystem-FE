@@ -13,6 +13,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { ChatService, ChatMessagePayload } from '../../services/chat.service';
 import { AuthService } from '../../services/auth.service';
+import { ChatCrypto } from '../../utils/chat-crypto.util'; // ← import util mới
 
 export interface Conversation {
   partnerId: string;
@@ -70,21 +71,15 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
         const senderId = this.getSenderId(msg);
         const receiverId = this.getReceiverId(msg);
         const isEcho = msg.type === 'ECHO';
-
-        // Xác định partner trong cuộc trò chuyện này
         const partnerId = isEcho ? receiverId : senderId;
 
-        // ── Nếu đang mở đúng cuộc trò chuyện → hiện tin ngay ────
         if (this.selectedConv?.partnerId === partnerId) {
-          // ECHO: server xác nhận đã lưu → cập nhật messageId nếu cần
-          // MESSAGE: tin người khác gửi → thêm vào list
           if (!isEcho) {
-            // Tránh duplicate với optimistic message
-            this.messages.push(msg);
-            // Đánh dấu đã đọc ngay vì đang mở
+            // ── Giải mã tin đến qua socket ──────────────────────────
+            this.decryptAndPush(msg);
             this.chatService.markRead(senderId, this.userId);
           } else {
-            // Echo: cập nhật messageId cho optimistic message cuối cùng
+            // Echo: cập nhật messageId cho optimistic message cuối
             const last = this.messages[this.messages.length - 1];
             if (last && !last.messageId) {
               last.messageId = msg.messageId;
@@ -93,24 +88,26 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
           }
           this.shouldScrollBottom = true;
         } else {
-          // ── Không đang mở → cập nhật sidebar ────────────────────
           if (!isEcho) {
-            // Tin đến từ người khác → tăng unread
             const conv = this.conversations.find((c) => c.partnerId === senderId);
             if (conv) {
               conv.unreadCount++;
-              conv.lastMessage = this.getMessageText(msg);
-              conv.lastTime = this.getCreatedAt(msg);
+              // Preview sidebar: giải mã lastMessage
+              ChatCrypto.safeDecrypt(this.getMessageText(msg)).then((plain) => {
+                conv.lastMessage = plain;
+                conv.lastTime = this.getCreatedAt(msg);
+                this.sortConversations();
+                this.cdr.detectChanges();
+              });
+              return;
             } else {
-              // Cuộc trò chuyện mới → reload sidebar
               this.loadConversations();
               return;
             }
           } else {
-            // Echo tin mình gửi đến người khác → cập nhật lastMessage
             const conv = this.conversations.find((c) => c.partnerId === receiverId);
             if (conv) {
-              conv.lastMessage = this.getMessageText(msg);
+              conv.lastMessage = this.getMessageText(msg); // echo là plaintext
               conv.lastTime = this.getCreatedAt(msg);
             }
           }
@@ -121,7 +118,7 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
       }),
     );
 
-    // Đọc query params (navigate từ search page)
+    // Đọc query params
     this.route.queryParamMap.subscribe((params) => {
       this.roomId = Number(params.get('roomId')) || 0;
       this.receiverIdFromRoute = params.get('receiverId') || '';
@@ -140,7 +137,16 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.subs.unsubscribe();
   }
 
-  // ── Field accessors (tương thích camelCase & snake_case) ──────────
+  // ── Giải mã rồi push vào messages list ──────────────────────────
+
+  private async decryptAndPush(msg: any): Promise<void> {
+    const raw = this.getMessageText(msg);
+    const plain = await ChatCrypto.safeDecrypt(raw);
+    this.messages.push({ ...msg, message: plain, messageContent: plain });
+    this.cdr.detectChanges();
+  }
+
+  // ── Field accessors ──────────────────────────────────────────────
 
   getMessageText(m: any): string {
     return m?.message ?? m?.messageContent ?? m?.message_content ?? '';
@@ -162,7 +168,7 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     return this.getSenderId(m) === this.userId;
   }
 
-  // ── Load conversations ────────────────────────────────────────────
+  // ── Load conversations ───────────────────────────────────────────
 
   loadConversations(autoSelectPartnerId?: string): void {
     this.chatService.getMyChats(this.userId).subscribe({
@@ -171,7 +177,7 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
           partnerId: c.partnerId ?? c.partner_id ?? c.userId ?? c.user_id ?? '',
           partnerName: c.partnerName ?? c.partner_name ?? c.name ?? 'Người dùng',
           partnerAvatar: c.partnerAvatar ?? c.partner_avatar ?? c.avatar ?? '',
-          lastMessage: c.lastMessage ?? c.last_message ?? '',
+          lastMessage: c.lastMessage ?? c.last_message ?? '', // BE đã safeDecrypt
           lastTime: c.lastTime ?? c.last_time ?? '',
           unreadCount: c.unreadCount ?? c.unread_count ?? 0,
         }));
@@ -182,14 +188,13 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
           if (existing) {
             this.selectConversation(existing);
           } else {
-            const partnerNameFromRoute =
+            const partnerName =
               this.route.snapshot.queryParamMap.get('partnerName') || 'Người dùng';
-            const partnerAvatarFromRoute =
-              this.route.snapshot.queryParamMap.get('partnerAvatar') || '';
+            const partnerAvatar = this.route.snapshot.queryParamMap.get('partnerAvatar') || '';
             const newConv: Conversation = {
               partnerId: autoSelectPartnerId,
-              partnerName: partnerNameFromRoute,
-              partnerAvatar: partnerAvatarFromRoute,
+              partnerName,
+              partnerAvatar,
               lastMessage: '',
               lastTime: new Date().toISOString(),
               unreadCount: 0,
@@ -202,14 +207,12 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
       },
       error: () => {
         if (autoSelectPartnerId) {
-          const partnerNameFromRoute =
-            this.route.snapshot.queryParamMap.get('partnerName') || 'Người dùng';
-          const partnerAvatarFromRoute =
-            this.route.snapshot.queryParamMap.get('partnerAvatar') || '';
+          const partnerName = this.route.snapshot.queryParamMap.get('partnerName') || 'Người dùng';
+          const partnerAvatar = this.route.snapshot.queryParamMap.get('partnerAvatar') || '';
           const newConv: Conversation = {
             partnerId: autoSelectPartnerId,
-            partnerName: partnerNameFromRoute,
-            partnerAvatar: partnerAvatarFromRoute,
+            partnerName,
+            partnerAvatar,
             lastMessage: '',
             lastTime: new Date().toISOString(),
             unreadCount: 0,
@@ -221,20 +224,27 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     });
   }
 
-  // ── Select conversation ───────────────────────────────────────────
+  // ── Select conversation + load + decrypt history ─────────────────
 
   selectConversation(conv: Conversation): void {
     this.selectedConv = conv;
     this.messages = [];
     this.loading = true;
-    conv.unreadCount = 0; // reset badge ngay
+    conv.unreadCount = 0;
 
     this.chatService.getHistory(this.userId, conv.partnerId).subscribe({
-      next: (msgs: any[]) => {
-        this.messages = msgs || [];
+      next: async (msgs: any[]) => {
+        // Giải mã toàn bộ lịch sử song song
+        const decrypted = await Promise.all(
+          (msgs || []).map(async (m) => {
+            const raw = this.getMessageText(m);
+            const plain = await ChatCrypto.safeDecrypt(raw);
+            return { ...m, message: plain, messageContent: plain };
+          }),
+        );
+        this.messages = decrypted;
         this.loading = false;
         this.shouldScrollBottom = true;
-        // Đánh dấu đã đọc
         this.chatService.markRead(conv.partnerId, this.userId);
         this.cdr.detectChanges();
       },
@@ -246,13 +256,11 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     });
   }
 
-  // ── Send message ──────────────────────────────────────────────────
-
   send(): void {
     const text = this.messageText.trim();
     if (!text || !this.selectedConv) return;
 
-    // Optimistic UI: hiện tin ngay, chưa có messageId
+    // Optimistic UI: hiện ngay dạng plaintext
     const optimistic: any = {
       senderId: this.userId,
       receiverId: this.selectedConv.partnerId,
@@ -264,7 +272,7 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.messageText = '';
     this.shouldScrollBottom = true;
 
-    // Gửi qua WebSocket
+    // Gửi qua WebSocket (plaintext — BE sẽ encrypt khi lưu)
     this.chatService.sendMessage({
       roomId: this.roomId || 1,
       senderId: this.userId,
@@ -286,7 +294,7 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     }
   }
 
-  // ── Helpers ───────────────────────────────────────────────────────
+  // ── Helpers ──────────────────────────────────────────────────────
 
   private scrollToBottom(): void {
     try {
@@ -305,13 +313,11 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.router.navigate(['/']);
   }
 
-  /** Mobile: quay lại danh sách từ chat window */
   backToList(): void {
     this.selectedConv = null;
     this.messages = [];
   }
 
-  /** Tổng unread để hiện badge trên sidebar header */
   getTotalUnread(): number {
     return this.conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
   }
