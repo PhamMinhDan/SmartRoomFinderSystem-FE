@@ -12,18 +12,27 @@ interface RoomImage {
   imageUrl: string;
 }
 
+interface RoomAddress {
+  room_address_id: number;
+  street_address: string;
+  city_name: string;
+  district_name: string;
+  ward_name: string;
+  latitude: number | null;
+  longitude: number | null;
+}
+
 interface Room {
   roomId: number;
   title: string;
   pricePerMonth: number;
-  address: string;
+  address: RoomAddress; // object thay vì string
   createdAt: string;
   expiredAt?: string;
   postTier?: string;
   isApproved: boolean;
   isActive: boolean;
   displayUntil?: string;
-
   hiddenReason?: string;
   images: RoomImage[];
 }
@@ -209,7 +218,11 @@ export class ManagePostsComponent implements OnInit, OnDestroy {
     if (this.searchQuery.trim()) {
       const q = this.searchQuery.toLowerCase();
       list = list.filter(
-        (r) => r.title.toLowerCase().includes(q) || r.address.toLowerCase().includes(q),
+        (r) =>
+          r.title.toLowerCase().includes(q) ||
+          r.address?.street_address?.toLowerCase().includes(q) ||
+          r.address?.district_name?.toLowerCase().includes(q) ||
+          r.address?.city_name?.toLowerCase().includes(q),
       );
     }
 

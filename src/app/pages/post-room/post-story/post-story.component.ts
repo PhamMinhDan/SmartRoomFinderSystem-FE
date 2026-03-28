@@ -15,11 +15,23 @@ import { firstValueFrom } from 'rxjs';
 import mapboxgl from 'mapbox-gl';
 import { LocationService } from '../../../services/location.service';
 import { ToastService } from '../../../components/toast/toast.service';
+
 interface Amenity {
   amenityId: number;
   amenityName: string;
   iconUrl?: string;
   category?: string;
+}
+
+/** Khớp với RoomAddressResponse.java */
+export interface RoomAddressResponse {
+  room_address_id: number;
+  street_address: string;
+  city_name: string;
+  district_name: string;
+  ward_name: string;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 @Component({
@@ -45,7 +57,6 @@ export class PostRoomComponent implements OnInit {
   videoPreview: string | null = null;
   videoUploading = false;
   videoProgress = 0;
-
   imageError = '';
   videoError = '';
 
@@ -53,6 +64,10 @@ export class PostRoomComponent implements OnInit {
   showLocationModal = false;
   openLocDropdown: string | null = null;
   fullAddress = '';
+
+  // Lưu tọa độ geocoded từ Mapbox để gửi lên BE
+  private geocodedLatitude: number | null = null;
+  private geocodedLongitude: number | null = null;
 
   cities: any[] = [];
   districts: any[] = [];
@@ -73,7 +88,6 @@ export class PostRoomComponent implements OnInit {
 
   // Map
   private map: any;
-  private L: any;
   private MAPBOX_TOKEN =
     'pk.eyJ1IjoibHVvbmcyMyIsImEiOiJjbW1raDNueWcxZGJ3MnFwemg1aTI2cXF1In0.P4Zv9Up4zZaXXn7wG3ue4g';
 
@@ -91,28 +105,22 @@ export class PostRoomComponent implements OnInit {
     this.roomForm = this.fb.group({
       title: ['', [Validators.required, Validators.maxLength(255)]],
       description: [''],
-
       pricePerMonth: [
         null,
         [
           Validators.required,
           Validators.min(1000),
-          Validators.max(1000000000), // max 1 tỷ
-          Validators.pattern(/^\d{1,10}$/), // tối đa 10 số
+          Validators.max(1_000_000_000),
+          Validators.pattern(/^\d{1,10}$/),
         ],
       ],
-
       depositAmount: [
         null,
-        [Validators.min(0), Validators.max(1000000000), Validators.pattern(/^\d{1,10}$/)],
+        [Validators.min(0), Validators.max(1_000_000_000), Validators.pattern(/^\d{1,10}$/)],
       ],
-
       areaSize: [null, [Validators.required, Validators.min(1), Validators.max(1000)]],
-
       roomType: ['', Validators.required],
-
       capacity: [1, [Validators.min(1), Validators.max(5)]],
-
       furnishLevel: [''],
     });
 
@@ -170,7 +178,6 @@ export class PostRoomComponent implements OnInit {
   onImagesSelect(event: Event) {
     const input = event.target as HTMLInputElement;
     const files = Array.from(input.files || []);
-
     this.imageError = '';
 
     if (this.imageFiles.length + files.length > 10) {
@@ -183,41 +190,33 @@ export class PostRoomComponent implements OnInit {
         this.imageError = 'File phải là ảnh';
         return;
       }
-
       const reader = new FileReader();
-
       reader.onload = (e) => {
         this.imagePreviews.push(e.target?.result as string);
         this.imageFiles.push(file);
       };
-
       reader.readAsDataURL(file);
     });
   }
 
   onVideoSelect(event: Event) {
     const file = (event.target as HTMLInputElement).files?.[0];
-
     if (!file) return;
-
     if (!file.type.startsWith('video/')) {
       this.videoError = 'File phải là video';
       return;
     }
-
     if (file.size > 20 * 1024 * 1024) {
       this.videoError = 'Video phải nhỏ hơn 20MB';
       return;
     }
-
     this.videoFile = file;
     this.videoPreview = URL.createObjectURL(file);
   }
 
   onImageDrop(event: DragEvent) {
     event.preventDefault();
-    const files = Array.from(event.dataTransfer?.files || []);
-    files.forEach((file) => {
+    Array.from(event.dataTransfer?.files || []).forEach((file) => {
       if (!file.type.startsWith('image/')) return;
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -333,11 +332,11 @@ export class PostRoomComponent implements OnInit {
 
       const [lng, lat] = feature.center;
 
-      this.map.flyTo({
-        center: [lng, lat],
-        zoom: 16,
-      });
+      // ── Lưu tọa độ để gửi lên BE ──────────────────────────────
+      this.geocodedLongitude = lng;
+      this.geocodedLatitude = lat;
 
+      this.map.flyTo({ center: [lng, lat], zoom: 16 });
       new mapboxgl.Marker({ color: '#e11d48' }).setLngLat([lng, lat]).addTo(this.map);
     });
   }
@@ -348,7 +347,6 @@ export class PostRoomComponent implements OnInit {
     this.roomForm.markAllAsTouched();
 
     const error = this.validateForm();
-
     if (error) {
       this.errorMsg = error;
       return;
@@ -358,44 +356,47 @@ export class PostRoomComponent implements OnInit {
     this.errorMsg = '';
 
     try {
-      // Upload images via POST /api/upload
+      // Upload images
       const mediaUrls: string[] = [];
-      const uploadTasks = this.imageFiles.map((file) => {
-        const formData = new FormData();
-        formData.append('file', file);
-
-        return firstValueFrom(this.http.post(`${environment.apiUrl}/upload`, formData));
-      });
-
-      const results: any[] = await Promise.all(uploadTasks);
-
+      const results: any[] = await Promise.all(
+        this.imageFiles.map((file) => {
+          const fd = new FormData();
+          fd.append('file', file);
+          return firstValueFrom(this.http.post(`${environment.apiUrl}/upload`, fd));
+        }),
+      );
       results.forEach((r) => mediaUrls.push(r.url));
 
       if (this.videoFile) {
-        const formData = new FormData();
-        formData.append('file', this.videoFile);
-
-        const res: any = await firstValueFrom(
-          this.http.post(`${environment.apiUrl}/upload`, formData),
-        );
-
+        const fd = new FormData();
+        fd.append('file', this.videoFile);
+        const res: any = await firstValueFrom(this.http.post(`${environment.apiUrl}/upload`, fd));
         mediaUrls.push(res.url);
       }
 
+      // ── Build streetAddress (số nhà + tên đường) ──────────────
+      const streetAddress = this.locationForm.value.houseNumber
+        ? `${this.locationForm.value.houseNumber} ${this.locationForm.value.streetName}`
+        : this.locationForm.value.streetName;
+
+      // ── Payload gửi lên BE — khớp với CreateRoomRequest.java ──
       const payload = {
         ...this.roomForm.value,
-        address: this.locationForm.value.houseNumber
-          ? `${this.locationForm.value.houseNumber} ${this.locationForm.value.streetName}`
-          : this.locationForm.value.streetName,
+
+        // địa chỉ tách riêng (field name khớp BE)
+        streetAddress,
         cityName: this.selectedCity?.name,
         districtName: this.selectedDistrict?.name,
         wardName: this.selectedWard?.name,
+        latitude: this.geocodedLatitude,
+        longitude: this.geocodedLongitude,
+
         mediaUrls,
         amenityIds: Array.from(this.selectedAmenityIds),
         customAmenities: this.customAmenities,
       };
 
-      const res: any = await firstValueFrom(this.http.post(`${environment.apiUrl}/rooms`, payload));
+      await firstValueFrom(this.http.post(`${environment.apiUrl}/rooms`, payload));
       this.toastService.show('Đăng tin thành công !', 'success');
 
       setTimeout(() => {
@@ -403,14 +404,9 @@ export class PostRoomComponent implements OnInit {
       }, 500);
     } catch (err: any) {
       console.error('Submit error:', err);
-
-      if (err?.error?.message) {
-        this.errorMsg = err.error.message;
-      } else if (err?.error?.errors) {
-        this.errorMsg = Object.values(err.error.errors).join(', ');
-      } else {
-        this.errorMsg = 'Dữ liệu không hợp lệ (có thể số quá lớn)';
-      }
+      if (err?.error?.message) this.errorMsg = err.error.message;
+      else if (err?.error?.errors) this.errorMsg = Object.values(err.error.errors).join(', ');
+      else this.errorMsg = 'Dữ liệu không hợp lệ';
     } finally {
       this.submitLoading = false;
     }
@@ -418,39 +414,14 @@ export class PostRoomComponent implements OnInit {
 
   validateForm(): string {
     const f = this.roomForm;
-
-    if (f.get('title')?.invalid) {
-      return 'Vui lòng nhập tiêu đề';
-    }
-
-    if (f.get('pricePerMonth')?.errors?.['required']) {
-      return 'Vui lòng nhập giá thuê';
-    }
-
-    if (f.get('pricePerMonth')?.errors?.['max']) {
-      return 'Giá thuê quá lớn (tối đa 1 tỷ)';
-    }
-
-    if (f.get('pricePerMonth')?.errors?.['pattern']) {
-      return 'Giá thuê không hợp lệ';
-    }
-
-    if (f.get('depositAmount')?.errors?.['max']) {
-      return 'Tiền cọc quá lớn';
-    }
-
-    if (f.get('areaSize')?.errors?.['min']) {
-      return 'Diện tích phải lớn hơn 0';
-    }
-
-    if (!this.fullAddress) {
-      return 'Vui lòng chọn địa chỉ';
-    }
-
-    if (this.imageFiles.length === 0) {
-      return 'Vui lòng chọn ít nhất 1 ảnh';
-    }
-
+    if (f.get('title')?.invalid) return 'Vui lòng nhập tiêu đề';
+    if (f.get('pricePerMonth')?.errors?.['required']) return 'Vui lòng nhập giá thuê';
+    if (f.get('pricePerMonth')?.errors?.['max']) return 'Giá thuê quá lớn (tối đa 1 tỷ)';
+    if (f.get('pricePerMonth')?.errors?.['pattern']) return 'Giá thuê không hợp lệ';
+    if (f.get('depositAmount')?.errors?.['max']) return 'Tiền cọc quá lớn';
+    if (f.get('areaSize')?.errors?.['min']) return 'Diện tích phải lớn hơn 0';
+    if (!this.fullAddress) return 'Vui lòng chọn địa chỉ';
+    if (this.imageFiles.length === 0) return 'Vui lòng chọn ít nhất 1 ảnh';
     return '';
   }
 }

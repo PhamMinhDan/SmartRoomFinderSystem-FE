@@ -8,9 +8,9 @@ import { Subscription } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { LocationService } from '../../services/location.service';
 import { FavouriteService } from '../../services/favourites.service';
-
 import { ToastService } from '../../components/toast/toast.service';
 import { AuthService } from '../../services/auth.service';
+
 interface RoomImage {
   imageId: number;
   imageUrl: string;
@@ -18,14 +18,25 @@ interface RoomImage {
   isPrimary: boolean;
 }
 
+/** Khớp với RoomAddressResponse.java */
+interface RoomAddress {
+  room_address_id: number;
+  street_address: string;
+  city_name: string;
+  district_name: string;
+  ward_name: string;
+  latitude: number | null;
+  longitude: number | null;
+}
+
 interface Room {
   roomId: number;
   title: string;
   description: string;
-  address: string;
-  cityName: string;
-  districtName: string;
-  wardName: string;
+
+  /** Địa chỉ nằm trong object riêng */
+  address: RoomAddress;
+
   areaSize: number;
   pricePerMonth: number;
   depositAmount: number;
@@ -59,7 +70,6 @@ interface Room {
   templateUrl: './search-page.component.html',
 })
 export class SearchPageComponent implements OnInit, OnDestroy {
-  // ── View ─────────────────────────────────────────
   view: 'grid' | 'list' = 'grid';
 
   // ── Filters ──────────────────────────────────────
@@ -88,7 +98,7 @@ export class SearchPageComponent implements OnInit, OnDestroy {
 
   // ── Favourites ────────────────────────────────────
   savedIds = new Set<number>();
-  togglingIds = new Set<number>(); // prevent double-click
+  togglingIds = new Set<number>();
   private favSub?: Subscription;
 
   // ── Location dropdowns ────────────────────────────
@@ -137,12 +147,10 @@ export class SearchPageComponent implements OnInit, OnDestroy {
       this.cities = data;
     });
 
-    // Subscribe to saved IDs from the service
     this.favSub = this.favouriteService.savedIds.subscribe((ids) => {
       this.savedIds = ids;
     });
 
-    // Load saved IDs if logged in
     if (this.authService.isLoggedIn()) {
       this.favouriteService.loadSavedIds();
     }
@@ -163,7 +171,7 @@ export class SearchPageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (this.togglingIds.has(roomId)) return; // debounce
+    if (this.togglingIds.has(roomId)) return;
     this.togglingIds.add(roomId);
 
     this.favouriteService.toggle(roomId).subscribe({
@@ -217,45 +225,21 @@ export class SearchPageComponent implements OnInit, OnDestroy {
 
     let params = new HttpParams();
 
-    if (this.city?.trim()) {
-      params = params.set('city', this.city.trim());
-    }
-
-    if (this.district?.trim()) {
-      params = params.set('district', this.district.trim());
-    }
-
-    if (this.roomType) {
-      params = params.set('roomType', this.roomType);
-    }
-
-    if (this.priceMin != null) {
+    if (this.city?.trim()) params = params.set('city', this.city.trim());
+    if (this.district?.trim()) params = params.set('district', this.district.trim());
+    if (this.roomType) params = params.set('roomType', this.roomType);
+    if (this.priceMin != null)
       params = params.set('priceMin', (this.priceMin * 1_000_000).toString());
-    }
-
-    if (this.priceMax != null) {
+    if (this.priceMax != null)
       params = params.set('priceMax', (this.priceMax * 1_000_000).toString());
-    }
+    if (this.areaMin != null) params = params.set('areaMin', this.areaMin.toString());
+    if (this.areaMax != null) params = params.set('areaMax', this.areaMax.toString());
+    if (this.minRating != null) params = params.set('minRating', this.minRating.toString());
+    if (this.sortOrder) params = params.set('sort', this.sortOrder);
 
-    if (this.areaMin != null) {
-      params = params.set('areaMin', this.areaMin.toString());
-    }
-
-    if (this.areaMax != null) {
-      params = params.set('areaMax', this.areaMax.toString());
-    }
-    if (this.amenities && this.amenities.length > 0) {
-      this.amenities.forEach((a) => {
-        params = params.append('amenities', a);
-      });
-    }
-
-    if (this.minRating != null) {
-      params = params.set('minRating', this.minRating.toString());
-    }
-    if (this.sortOrder) {
-      params = params.set('sort', this.sortOrder);
-    }
+    this.amenities.forEach((a) => {
+      params = params.append('amenities', a);
+    });
 
     this.fetchRooms(params);
   }
@@ -282,7 +266,7 @@ export class SearchPageComponent implements OnInit, OnDestroy {
     this.router.navigate(['/room-detail', id]);
   }
 
-  contactRoom(room: any) {
+  contactRoom(room: Room) {
     this.router.navigate(['/chat'], {
       queryParams: {
         roomId: room.roomId,
@@ -324,7 +308,6 @@ export class SearchPageComponent implements OnInit, OnDestroy {
     this.minRating = null;
     this.sortOrder = 'newest';
     this.currentPage = 0;
-
     this.search();
   }
 

@@ -9,6 +9,7 @@ import { ToastService } from '../../components/toast/toast.service';
 import { ReportModalComponent } from '../reportmodal/report-modal.component';
 import mapboxgl from 'mapbox-gl';
 import { LoginModalComponent } from '../../components/login-modal/login-modal.component';
+import { FavouriteService } from '../../services/favourites.service';
 
 // ── Interfaces ────────────────────────────────────────────────────
 interface RoomImage {
@@ -25,16 +26,25 @@ interface Amenity {
   category: string;
 }
 
+/** Khớp với RoomAddressResponse.java */
+interface RoomAddress {
+  room_address_id: number;
+  street_address: string;
+  city_name: string;
+  district_name: string;
+  ward_name: string;
+  latitude: number | null;
+  longitude: number | null;
+}
+
 interface Room {
   roomId: number;
   title: string;
   description: string;
-  address: string;
-  cityName: string;
-  districtName: string;
-  wardName: string;
-  latitude: number;
-  longitude: number;
+
+  /** Địa chỉ nằm trong object riêng */
+  address: RoomAddress;
+
   areaSize: number;
   pricePerMonth: number;
   depositAmount: number;
@@ -83,56 +93,45 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   loading = true;
   error = '';
 
-  // ── Image gallery ────────────────────────────────────────────
   currentImageIndex = 0;
   showPhoneNumber = false;
 
-  // ── Map ──────────────────────────────────────────────────────
   private map: any;
   private MAPBOX_TOKEN =
     'pk.eyJ1IjoibHVvbmcyMyIsImEiOiJjbW1raDNueWcxZGJ3MnFwemg1aTI2cXF1In0.P4Zv9Up4zZaXXn7wG3ue4g';
   showMap = false;
   mapInitialized = false;
 
-  // ── Reviews ──────────────────────────────────────────────────
   reviews: ReviewItem[] = [];
   reviewPage = 0;
   reviewTotalPages = 0;
   reviewsLoading = false;
 
-  // Review write form
   commentText = '';
   pendingRating = 0;
   hoverRating = 0;
   submittingReview = false;
   reviewError = '';
 
-  // Review image upload
   reviewImagePreviews: string[] = [];
   reviewImageUrls: string[] = [];
   reviewImageUploading: boolean[] = [];
 
-  // Filter & lightbox
   activeReviewFilter = 'all';
   lightboxImageUrl = '';
-
-  // Menu
   openReviewMenu: number | null = null;
 
-  // Similar rooms
   similarRooms: Room[] = [];
 
-  // User
   currentRole = '';
   currentUserId = '';
-
-  // Landlord actions
   updatingStatus = false;
 
   pages: number[] = [];
   ratingStats: { [key: number]: number } = {};
+  reportTargetId: number | null = null;
+  reportType: 'ROOM' | 'REVIEW' = 'ROOM';
 
-  // ── Review filter config ──────────────────────────────────────
   readonly reviewFilters = [
     { key: 'latest', label: 'Gần đây' },
     { key: 'all', label: 'Tất cả' },
@@ -143,9 +142,11 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     { key: '1', label: '1★' },
   ];
 
-  // Report modal
   showReportModal = false;
   isLoginOpen = false;
+
+  savedIds = new Set<number>();
+  toggling = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -153,10 +154,10 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     private http: HttpClient,
     private toast: ToastService,
     public authService: AuthService,
+    private favouriteService: FavouriteService,
     @Inject(PLATFORM_ID) private platformId: Object,
   ) {}
 
-  // ── Lifecycle ────────────────────────────────────────────────
   ngOnInit(): void {
     const user = this.authService.currentUserValue;
     if (user) {
@@ -167,6 +168,10 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       const id = params['id'];
       if (id) this.loadRoom(id);
     });
+    this.favouriteService.savedIds.subscribe((ids) => {
+      this.savedIds = ids;
+    });
+    if (this.authService.isLoggedIn()) this.favouriteService.loadSavedIds();
   }
 
   async ngAfterViewInit(): Promise<void> {}
@@ -177,9 +182,8 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       this.map = null;
     }
   }
-  getReviewCountByStar(star: number): number {
-    if (!this.reviews) return 0;
 
+  getReviewCountByStar(star: number): number {
     return this.reviews.filter((r) => r.rating >= star && r.rating < star + 1).length;
   }
 
@@ -211,47 +215,36 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
   loadRatingStats() {
     if (!this.room) return;
-
     this.http
       .get<any>(`${environment.apiUrl}/rooms/${this.room.roomId}/reviews/stats-count`)
       .subscribe((res) => {
         this.ratingStats = res.data;
       });
   }
+
   // ── Reviews ──────────────────────────────────────────────────
   loadReviews(reset = false) {
     if (!this.room) return;
-
-    if (reset) {
-      this.reviews = [];
-    }
-
+    if (reset) this.reviews = [];
     this.reviewsLoading = true;
 
-    let params: any = {
-      page: this.reviewPage,
-      size: 5,
-    };
-
-    // filter
-    if (['5', '4', '3', '2', '1'].includes(this.activeReviewFilter)) {
+    let params: any = { page: this.reviewPage, size: 5 };
+    if (['5', '4', '3', '2', '1'].includes(this.activeReviewFilter))
       params.star = this.activeReviewFilter;
-    }
-
-    // sort
-    if (this.activeReviewFilter === 'high') params.sort = 'high';
-    else if (this.activeReviewFilter === 'low') params.sort = 'low';
-    else params.sort = 'latest';
+    params.sort =
+      this.activeReviewFilter === 'high'
+        ? 'high'
+        : this.activeReviewFilter === 'low'
+          ? 'low'
+          : 'latest';
 
     this.http
       .get<any>(`${environment.apiUrl}/rooms/${this.room.roomId}/reviews`, { params })
       .subscribe((res) => {
         const page = res.data;
-
         this.reviews = page.content;
         this.reviewTotalPages = page.totalPages;
         this.pages = Array.from({ length: this.reviewTotalPages }, (_, i) => i);
-
         this.reviewsLoading = false;
       });
   }
@@ -262,6 +255,7 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       this.loadReviews(false);
     }
   }
+
   changePage(page: number) {
     this.reviewPage = page;
     this.loadReviews(true);
@@ -280,7 +274,6 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  // ── Rating bars (5 → 1) ───────────────────────────────────────
   get ratingBars(): { star: number; count: number; percent: number }[] {
     const total = this.reviews.length;
     return [5, 4, 3, 2, 1].map((star) => {
@@ -289,7 +282,6 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  // ── Filtered reviews ──────────────────────────────────────────
   get filteredReviews(): ReviewItem[] {
     switch (this.activeReviewFilter) {
       case 'high':
@@ -306,22 +298,19 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     this.loadReviews(true);
   }
 
-  // ── Star rating input ────────────────────────────────────────
   selectRating(star: number) {
     this.pendingRating = star;
   }
-
   setHoverRating(star: number) {
     this.hoverRating = star;
   }
-
   clearHoverRating() {
     this.hoverRating = 0;
   }
+
   onRatingInput() {
     if (this.pendingRating < 0) this.pendingRating = 0;
     if (this.pendingRating > 5) this.pendingRating = 5;
-
     this.pendingRating = Math.round(this.pendingRating * 10) / 10;
   }
 
@@ -333,7 +322,6 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   onReviewImagesSelected(event: Event) {
     const input = event.target as HTMLInputElement;
     if (!input.files) return;
-
     const remaining = 3 - this.reviewImagePreviews.length;
     const files = Array.from(input.files).slice(0, remaining);
 
@@ -342,25 +330,19 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       this.reviewImagePreviews.push('');
       this.reviewImageUrls.push('');
       this.reviewImageUploading.push(true);
-
-      // Immediate base64 preview
       const reader = new FileReader();
       reader.onload = (e) => {
         this.reviewImagePreviews[idx] = e.target?.result as string;
       };
       reader.readAsDataURL(file);
-
-      // Upload to Cloudinary via backend
       this.uploadReviewImage(file, idx);
     });
-
     input.value = '';
   }
 
   uploadReviewImage(file: File, idx: number) {
     const formData = new FormData();
     formData.append('file', file);
-
     this.http.post<{ url: string }>(`${environment.apiUrl}/upload`, formData).subscribe({
       next: (res) => {
         this.reviewImageUrls[idx] = res.url;
@@ -382,7 +364,6 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     this.reviewImageUploading.splice(idx, 1);
   }
 
-  // ── Submit review ────────────────────────────────────────────
   submitReview() {
     if (!this.room) return;
     if (!this.authService.requireLogin(() => (this.isLoginOpen = true), undefined, this.router.url))
@@ -399,24 +380,19 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     this.submittingReview = true;
     this.reviewError = '';
 
-    const uploadedUrls = this.reviewImageUrls.filter((url) => !!url);
-
     const payload = {
       rating: this.pendingRating,
       comment: this.commentText.trim(),
-      imageUrls: uploadedUrls.length > 0 ? uploadedUrls : null,
+      imageUrls: this.reviewImageUrls.filter((url) => !!url) || null,
     };
 
     this.http
       .post<any>(`${environment.apiUrl}/rooms/${this.room.roomId}/reviews`, payload)
       .subscribe({
-        next: (res) => {
-          const newReview: ReviewItem = res?.data;
-
+        next: () => {
           this.toast.show('Đánh giá thành công 🎉', 'success');
           this.reviewPage = 0;
           this.loadReviews(true);
-
           this.refreshRatingStats();
           this.resetReviewForm();
           this.submittingReview = false;
@@ -440,8 +416,7 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   deleteReview(reviewId: number) {
-    if (!this.room) return;
-    if (!confirm('Xóa đánh giá này?')) return;
+    if (!this.room || !confirm('Xóa đánh giá này?')) return;
     this.http
       .delete<any>(`${environment.apiUrl}/rooms/${this.room.roomId}/reviews/${reviewId}`)
       .subscribe({
@@ -459,14 +434,20 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
   reportReview(reviewId: number) {
     this.openReviewMenu = null;
-    alert('Chức năng báo cáo sẽ được phát triển sau.');
+    this.authService.requireLogin(
+      () => (this.isLoginOpen = true),
+      () => {
+        this.reportTargetId = reviewId;
+        this.reportType = 'REVIEW';
+        this.showReportModal = true;
+      },
+      this.router.url,
+    );
   }
 
-  // ── Lightbox ─────────────────────────────────────────────────
   openLightbox(url: string) {
     this.lightboxImageUrl = url;
   }
-
   closeLightbox() {
     this.lightboxImageUrl = '';
   }
@@ -474,14 +455,13 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   // ── Similar rooms ─────────────────────────────────────────────
   loadSimilarRooms() {
     if (!this.room) return;
+    // Lọc theo city/district từ room.address object
+    const city = this.room.address?.city_name ?? '';
+    const district = this.room.address?.district_name ?? '';
+
     this.http
       .get<any>(`${environment.apiUrl}/rooms`, {
-        params: {
-          city: this.room.cityName,
-          district: this.room.districtName,
-          page: '0',
-          size: '6',
-        },
+        params: { city, district, page: '0', size: '6' },
       })
       .subscribe({
         next: (res) => {
@@ -495,8 +475,7 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   // ── Image gallery ─────────────────────────────────────────────
   get primaryImage(): string {
     if (!this.room?.images?.length) return '';
-    const img = this.room.images[this.currentImageIndex];
-    return img?.imageUrl || this.room.images[0].imageUrl;
+    return this.room.images[this.currentImageIndex]?.imageUrl || this.room.images[0].imageUrl;
   }
 
   prevImage() {
@@ -517,9 +496,7 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   // ── Map ───────────────────────────────────────────────────────
   async toggleMap() {
     this.showMap = !this.showMap;
-    if (this.showMap && !this.mapInitialized) {
-      setTimeout(() => this.initMap(), 150);
-    }
+    if (this.showMap && !this.mapInitialized) setTimeout(() => this.initMap(), 150);
   }
 
   async initMap() {
@@ -527,8 +504,9 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
     mapboxgl.accessToken = this.MAPBOX_TOKEN;
 
-    const roomLat = Number(this.room.latitude);
-    const roomLng = Number(this.room.longitude);
+    // ── Lấy tọa độ từ room.address object ──
+    const roomLat = Number(this.room.address?.latitude);
+    const roomLng = Number(this.room.address?.longitude);
 
     this.map = new mapboxgl.Map({
       container: 'roomDetailMap',
@@ -541,13 +519,14 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
       const roomEl = document.createElement('div');
       roomEl.className = 'pulse-marker';
 
+      const addr = this.room?.address;
+      const popupHtml = addr
+        ? `<b>📍 Phòng trọ</b><br>${addr.street_address}, ${addr.ward_name}, ${addr.district_name}, ${addr.city_name}`
+        : `<b>📍 Phòng trọ</b>`;
+
       new mapboxgl.Marker({ element: roomEl, anchor: 'center' })
         .setLngLat([roomLng, roomLat])
-        .setPopup(
-          new mapboxgl.Popup().setHTML(
-            `<b>📍 Phòng trọ</b><br>${this.room?.address}, ${this.room?.wardName}, ${this.room?.districtName}, ${this.room?.cityName}`,
-          ),
-        )
+        .setPopup(new mapboxgl.Popup().setHTML(popupHtml))
         .addTo(this.map);
 
       if (this.canContact) {
@@ -609,16 +588,16 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // ── Role helpers ──────────────────────────────────────────────
   get isRenter(): boolean {
-    const role = this.currentRole?.toUpperCase();
-    return role === 'RENTER' || role === 'USER';
+    return ['RENTER', 'USER'].includes(this.currentRole?.toUpperCase());
   }
-
   get isLandlord(): boolean {
     return this.currentRole?.toUpperCase() === 'LANDLORD';
   }
-
   get isMyRoom(): boolean {
     return !!this.currentUserId && this.room?.landlordId === this.currentUserId;
+  }
+  get canContact(): boolean {
+    return !this.isMyRoom;
   }
 
   // ── Actions ───────────────────────────────────────────────────
@@ -675,6 +654,8 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     this.authService.requireLogin(
       () => (this.isLoginOpen = true),
       () => {
+        this.reportTargetId = this.room?.roomId || null;
+        this.reportType = 'ROOM';
         this.showReportModal = true;
       },
       this.router.url,
@@ -691,11 +672,39 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     return phone.substring(0, 3) + '****' + phone.substring(phone.length - 2);
   }
 
+  isSaved(roomId?: number): boolean {
+    return roomId ? this.savedIds.has(roomId) : false;
+  }
+
+  toggleFavourite(event: Event) {
+    event.stopPropagation();
+    if (!this.room) return;
+    if (!this.authService.isLoggedIn()) {
+      this.toast.show('Vui lòng đăng nhập để lưu tin', 'info');
+      return;
+    }
+    if (this.toggling) return;
+    this.toggling = true;
+    this.favouriteService.toggle(this.room.roomId).subscribe({
+      next: (res) => {
+        const saved = res?.data?.saved ?? false;
+        this.toast.show(
+          saved ? '❤️ Đã lưu vào yêu thích' : '🤍 Đã bỏ lưu',
+          saved ? 'success' : 'info',
+        );
+        this.toggling = false;
+      },
+      error: () => {
+        this.toast.show('Có lỗi xảy ra', 'error');
+        this.toggling = false;
+      },
+    });
+  }
+
   // ── Star helpers ──────────────────────────────────────────────
   getStarArray(rating: number): number[] {
     return [1, 2, 3, 4, 5].map((i) => {
       const diff = rating - (i - 1);
-
       if (diff >= 1) return 1;
       if (diff > 0) return diff;
       return 0;
@@ -777,8 +786,9 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
   getExpireClass(dateStr?: string): string {
     if (!dateStr) return '';
-    const diff = new Date(dateStr).getTime() - new Date().getTime();
-    const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+    const days = Math.ceil(
+      (new Date(dateStr).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24),
+    );
     return days <= 3
       ? 'bg-red-100 text-red-600 border-red-200'
       : 'bg-emerald-100 text-emerald-700 border-emerald-200';
@@ -786,8 +796,9 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
   getExpireText(dateStr?: string): string {
     if (!dateStr) return '';
-    const diff = new Date(dateStr).getTime() - new Date().getTime();
-    const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+    const days = Math.ceil(
+      (new Date(dateStr).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24),
+    );
     if (days < 0) return 'Đã hết hạn';
     if (days === 0) return 'Hết hạn hôm nay';
     return `Còn ${days} ngày`;
@@ -796,19 +807,16 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   isVideo(url: string): boolean {
     return url?.includes('/video/upload/') || url?.endsWith('.mp4');
   }
+
   scrollToReviews() {
-    const el = document.getElementById('reviewSection');
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    document
+      .getElementById('reviewSection')
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
-  get canContact(): boolean {
-    return !this.isMyRoom;
-  }
+
   goToLogin() {
     this.isLoginOpen = true;
   }
-
   onLoginSuccess() {
     this.isLoginOpen = false;
   }
