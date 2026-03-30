@@ -1,13 +1,25 @@
-/* Bubble styles */
+/* ─── (Giữ nguyên toàn bộ CSS gốc) ───────────────────────────── */
+
+/* ─── Bubble ────────────────────────────────────────────────────── */
 .msg-bubble {
-  padding: 9px 14px;
   border-radius: 18px;
   line-height: 1.55;
   word-break: break-word;
-  white-space: pre-wrap;
-  display: inline-block;
+  display: inline-flex;
+  flex-direction: column;
   max-width: 100%;
+  overflow: hidden;
+  position: relative;
+  cursor: default;
+  user-select: text;
 }
+.msg-bubble:not(.bubble--has-media) {
+  padding: 9px 14px;
+}
+.msg-bubble.bubble--has-media {
+  padding: 0;
+}
+
 .bubble--me {
   background: #10b981;
   color: #fff;
@@ -19,8 +31,215 @@
   border-bottom-left-radius: 4px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
+.bubble--failed {
+  opacity: 0.6;
+}
 
-/* Fade-up animation */
+/* ─── Text ──────────────────────────────────────────────────────── */
+.bubble-text {
+  margin: 0;
+  font-size: 0.875rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.bubble-text.has-media {
+  padding: 6px 12px 10px;
+}
+.msg-bubble:not(.bubble--has-media) .bubble-text {
+  padding: 0;
+}
+
+/* ─── Media grid ────────────────────────────────────────────────── */
+.media-grid {
+  position: relative;
+  display: grid;
+  gap: 2px;
+  border-radius: 16px;
+  overflow: hidden;
+}
+.media-grid--1 {
+  grid-template-columns: 1fr;
+}
+.media-grid--2 {
+  grid-template-columns: 1fr 1fr;
+}
+
+/* ─── Từng ô media ──────────────────────────────────────────────── */
+.media-cell {
+  position: relative;
+  overflow: hidden;
+  background: #000;
+  aspect-ratio: 1/1;
+}
+.media-grid--1 .media-cell {
+  aspect-ratio: 4/3;
+  max-width: 280px;
+}
+.media-cell--uploading {
+  opacity: 0.5;
+  filter: blur(1px);
+}
+.media-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: opacity 0.2s;
+}
+.media-cell--video {
+  position: relative;
+}
+.media-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.video-badge {
+  position: absolute;
+  bottom: 6px;
+  left: 6px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+.media-upload-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  z-index: 10;
+}
+.upload-spinner {
+  width: 30px;
+  height: 30px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.upload-label {
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+}
+.media-failed {
+  padding: 8px 12px;
+  color: #fca5a5;
+  font-size: 12px;
+  text-align: center;
+}
+
+/* ─── Pending bar ───────────────────────────────────────────────── */
+.pending-bar {
+  background: #f0fdf4;
+  border-top: 1px solid #d1fae5;
+  padding: 6px 12px 6px;
+}
+.pending-scroll {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  overflow-x: auto;
+  overflow-y: visible;
+  padding-top: 12px;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+.pending-scroll::-webkit-scrollbar {
+  display: none;
+}
+.pending-item {
+  position: relative;
+  flex-shrink: 0;
+}
+.pending-thumb {
+  width: 80px;
+  height: 80px;
+  border-radius: 10px;
+  object-fit: cover;
+  display: block;
+  background: #000;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+.pending-video-wrap {
+  position: relative;
+  display: inline-block;
+}
+.pending-video-badge {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 18px;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 10px;
+  pointer-events: none;
+}
+.pending-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ef4444;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #f0fdf4;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.pending-remove:hover {
+  background: #dc2626;
+}
+.pending-add-btn {
+  width: 80px;
+  height: 80px;
+  border-radius: 10px;
+  border: 2px dashed #6ee7b7;
+  background: #fff;
+  color: #10b981;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+.pending-add-btn:hover {
+  background: #ecfdf5;
+  border-color: #10b981;
+}
+.pending-count {
+  margin: 4px 0 0;
+  font-size: 11px;
+  color: #6b7280;
+  text-align: right;
+}
+
+/* ─── Row animation ─────────────────────────────────────────────── */
 .msg-row {
   animation: fadeUp 0.18s ease;
 }
@@ -35,7 +254,7 @@
   }
 }
 
-/* Loading skeleton */
+/* ─── Skeleton ──────────────────────────────────────────────────── */
 .skeleton-msg {
   height: 36px;
   border-radius: 14px;
@@ -52,8 +271,363 @@
   }
 }
 
+/* ─── Mobile ────────────────────────────────────────────────────── */
 @media (max-width: 640px) {
   .mobile-css {
     margin-top: 10px !important;
   }
+  .media-grid--1 .media-cell {
+    max-width: 220px;
+  }
+}
+
+/* ─── Lightbox ──────────────────────────────────────────────────── */
+.lightbox-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.92);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: lb-fade-in 0.18s ease;
+}
+@keyframes lb-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.lb-img-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: calc(100vw - 120px);
+  max-height: calc(100vh - 130px);
+}
+.lb-img {
+  max-width: 100%;
+  max-height: calc(100vh - 130px);
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+  animation: lb-zoom-in 0.18s ease;
+  user-select: none;
+}
+@keyframes lb-zoom-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.lb-close {
+  position: fixed;
+  top: 16px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s;
+  z-index: 10000;
+}
+.lb-close:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+.lb-counter {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  z-index: 10000;
+  pointer-events: none;
+}
+.lb-nav {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s;
+  z-index: 10000;
+}
+.lb-nav:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+.lb-prev {
+  left: 16px;
+}
+.lb-next {
+  right: 16px;
+}
+.lb-strip {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  max-width: 90vw;
+  overflow-x: auto;
+  padding: 4px 8px;
+  scrollbar-width: none;
+  z-index: 10000;
+}
+.lb-strip::-webkit-scrollbar {
+  display: none;
+}
+.lb-thumb {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 6px;
+  cursor: pointer;
+  opacity: 0.55;
+  border: 2px solid transparent;
+  transition:
+    opacity 0.15s,
+    border-color 0.15s;
+  flex-shrink: 0;
+}
+.lb-thumb:hover {
+  opacity: 0.85;
+}
+.lb-thumb--active {
+  opacity: 1;
+  border-color: #10b981;
+}
+
+@media (max-width: 640px) {
+  .lb-img-wrap {
+    max-width: 100vw;
+    max-height: calc(100vh - 110px);
+  }
+  .lb-img {
+    max-height: calc(100vh - 110px);
+    border-radius: 0;
+  }
+  .lb-prev {
+    left: 6px;
+  }
+  .lb-next {
+    right: 6px;
+  }
+  .lb-nav {
+    width: 38px;
+    height: 38px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ─── Context Menu ─────────────────────────────────────────────────
+═══════════════════════════════════════════════════════════════════ */
+
+.ctx-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1999;
+}
+
+.msg-context-menu {
+  position: fixed;
+  z-index: 2000;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow:
+    0 8px 30px rgba(0, 0, 0, 0.16),
+    0 2px 8px rgba(0, 0, 0, 0.08);
+  min-width: 200px;
+  overflow: hidden;
+  animation: ctx-pop 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+  padding: 6px 0;
+}
+
+@keyframes ctx-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.88);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ─── Emoji row ─────────────────────────────────────────────────── */
+.ctx-emoji-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 8px 12px 6px;
+}
+
+.ctx-emoji-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    transform 0.15s,
+    background 0.12s;
+  line-height: 1;
+}
+.ctx-emoji-btn:hover {
+  background: #f3f4f6;
+  transform: scale(1.25);
+}
+.ctx-emoji-active {
+  background: #d1fae5;
+  transform: scale(1.15);
+}
+
+/* ─── Divider ───────────────────────────────────────────────────── */
+.ctx-divider {
+  height: 1px;
+  background: #f1f5f9;
+  margin: 4px 0;
+}
+
+/* ─── Menu items ────────────────────────────────────────────────── */
+.ctx-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 16px;
+  border: none;
+  background: transparent;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s;
+}
+.ctx-item:hover {
+  background: #f9fafb;
+}
+.ctx-item--danger {
+  color: #ef4444;
+}
+.ctx-item--danger:hover {
+  background: #fef2f2;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ─── Reactions bar (dưới bubble) ─────────────────────────────────
+═══════════════════════════════════════════════════════════════════ */
+
+.reaction-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: -8px;
+  padding: 0 4px;
+  z-index: 5;
+}
+.reaction-bar--me {
+  justify-content: flex-end;
+}
+.reaction-bar--them {
+  justify-content: flex-start;
+}
+
+.reaction-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 999px;
+  padding: 2px 7px 2px 5px;
+  font-size: 14px;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s,
+    transform 0.12s;
+  user-select: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  line-height: 1;
+}
+.reaction-chip:hover {
+  border-color: #10b981;
+  background: #f0fdf4;
+  transform: scale(1.08);
+}
+.reaction-chip--mine {
+  border-color: #10b981;
+  background: #d1fae5;
+}
+
+.reaction-count {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  line-height: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ─── Recalled bubble ─────────────────────────────────────────────
+═══════════════════════════════════════════════════════════════════ */
+
+.recalled-bubble {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 13px;
+  border-radius: 18px;
+  font-size: 0.82rem;
+  font-style: italic;
+  opacity: 0.75;
+  cursor: default;
+  user-select: none;
+}
+.recalled-me {
+  background: rgba(16, 185, 129, 0.12);
+  color: #065f46;
+  border: 1.5px dashed #6ee7b7;
+  border-bottom-right-radius: 4px;
+}
+.recalled-them {
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1.5px dashed #cbd5e1;
+  border-bottom-left-radius: 4px;
+}
+
+/* ─── Msg bubble wrap (needed for relative positioning) ─────────── */
+.msg-bubble-wrap {
+  position: relative;
 }

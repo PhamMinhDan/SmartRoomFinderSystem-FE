@@ -3,7 +3,6 @@
     class="flex flex-1 min-h-0 overflow-hidden mx-auto w-full max-w-7xl md:my-6 md:rounded-2xl md:shadow-xl md:overflow-hidden bg-white"
   >
     <!-- ─────────────── SIDEBAR ─────────────── -->
-    <!-- Mobile: chiếm full khi chưa chọn; Desktop: luôn hiện -->
     <aside
       class="flex flex-col bg-white border-r border-gray-100 overflow-hidden transition-all duration-300"
       [class.w-full]="!selectedConv"
@@ -13,7 +12,6 @@
       [class.md:block]="true"
       style="flex-shrink: 0"
     >
-      <!-- Header -->
       <div
         class="flex items-center justify-between px-5 py-4 border-b border-gray-100 flex-shrink-0 mobile-css"
       >
@@ -38,7 +36,6 @@
         </span>
       </div>
 
-      <!-- Empty -->
       <div
         *ngIf="conversations.length === 0"
         class="flex-1 flex flex-col items-center justify-center text-gray-400 gap-3 p-8"
@@ -50,7 +47,6 @@
         </button>
       </div>
 
-      <!-- List -->
       <div class="flex-1 overflow-y-auto overscroll-contain">
         <div
           *ngFor="let c of conversations; trackBy: trackByConv"
@@ -61,7 +57,6 @@
           [class.border-transparent]="selectedConv?.partnerId !== c.partnerId"
           [class.hover:bg-gray-50]="selectedConv?.partnerId !== c.partnerId"
         >
-          <!-- Avatar -->
           <div class="relative flex-shrink-0">
             <img
               [src]="getAvatar(c)"
@@ -70,21 +65,19 @@
             />
             <span
               *ngIf="c.unreadCount > 0"
-              class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1 border-2 border-white leading-none"
+              class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1 border-2 border-white"
             >
               {{ c.unreadCount > 9 ? '9+' : c.unreadCount }}
             </span>
           </div>
-
-          <!-- Info -->
           <div class="flex-1 min-w-0">
             <div class="flex items-center justify-between mb-0.5">
               <span
                 class="text-sm truncate"
                 [class.font-bold]="c.unreadCount > 0"
                 [class.text-gray-900]="c.unreadCount > 0"
-                [class.font-medium]="c.unreadCount === 0"
-                [class.text-gray-700]="c.unreadCount === 0"
+                [class.font-medium]="!c.unreadCount"
+                [class.text-gray-700]="!c.unreadCount"
               >
                 {{ c.partnerName }}
               </span>
@@ -92,7 +85,7 @@
                 class="text-[11px] ml-2 flex-shrink-0"
                 [class.text-emerald-500]="c.unreadCount > 0"
                 [class.font-semibold]="c.unreadCount > 0"
-                [class.text-gray-400]="c.unreadCount === 0"
+                [class.text-gray-400]="!c.unreadCount"
               >
                 {{ formatTime(c.lastTime) }}
               </span>
@@ -101,7 +94,7 @@
               class="text-xs truncate m-0"
               [class.text-gray-800]="c.unreadCount > 0"
               [class.font-semibold]="c.unreadCount > 0"
-              [class.text-gray-400]="c.unreadCount === 0"
+              [class.text-gray-400]="!c.unreadCount"
             >
               {{ c.lastMessage || 'Bắt đầu cuộc trò chuyện' }}
             </p>
@@ -110,15 +103,14 @@
       </div>
     </aside>
 
-    <!-- ─────────────── CHAT MAIN ─────────────── -->
-    <!-- Mobile: hiện khi đã chọn conv; Desktop: luôn hiện -->
+    <!-- ─────────────── MAIN ─────────────── -->
     <main
       class="flex-1 min-w-0 flex flex-col overflow-hidden bg-gray-50"
       [class.hidden]="!selectedConv"
       [class.flex]="!!selectedConv"
       [class.md:flex]="true"
     >
-      <!-- Empty state desktop -->
+      <!-- Desktop empty -->
       <div
         *ngIf="!selectedConv"
         class="hidden md:flex flex-1 flex-col items-center justify-center text-gray-400 gap-4"
@@ -141,10 +133,9 @@
         *ngIf="selectedConv"
         class="flex items-center gap-3 px-4 py-3 bg-white border-b border-gray-100 flex-shrink-0 shadow-sm"
       >
-        <!-- Nút quay lại (mobile only) -->
         <button
           (click)="backToList()"
-          class="md:hidden w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors text-gray-600 flex-shrink-0"
+          class="md:hidden w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600"
         >
           <svg
             width="20"
@@ -157,13 +148,10 @@
             <polyline points="15,18 9,12 15,6" />
           </svg>
         </button>
-
         <img
           [src]="getAvatar(selectedConv)"
-          [alt]="selectedConv.partnerName"
           class="w-9 h-9 rounded-full object-cover flex-shrink-0"
         />
-
         <div class="flex-1 min-w-0">
           <div class="text-sm font-bold text-gray-900 truncate">{{ selectedConv.partnerName }}</div>
           <div class="flex items-center gap-1.5 mt-0.5">
@@ -173,13 +161,13 @@
         </div>
       </header>
 
-      <!-- Messages -->
+      <!-- ── Messages ── -->
       <div
         *ngIf="selectedConv"
         #chatboxRef
         class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden flex flex-col gap-1 px-4 py-5 md:px-6"
       >
-        <!-- Loading -->
+        <!-- Skeleton -->
         <div *ngIf="loading" class="flex flex-col gap-3">
           <div class="skeleton-msg" style="width: 52%; align-self: flex-start"></div>
           <div class="skeleton-msg" style="width: 40%; align-self: flex-end"></div>
@@ -187,7 +175,7 @@
           <div class="skeleton-msg" style="width: 38%; align-self: flex-end"></div>
         </div>
 
-        <!-- No messages -->
+        <!-- Empty -->
         <div
           *ngIf="!loading && messages.length === 0"
           class="flex-1 flex flex-col items-center justify-center text-gray-400 gap-2"
@@ -196,13 +184,14 @@
           <p class="text-sm">Hãy bắt đầu cuộc trò chuyện!</p>
         </div>
 
-        <!-- Bubbles -->
+        <!-- ── Bubbles ── -->
         <ng-container *ngIf="!loading">
           <div
             *ngFor="let m of messages; trackBy: trackByMsg"
             class="msg-row flex items-end gap-2 w-full"
             [class.flex-row-reverse]="isMe(m)"
           >
+            <!-- Avatar partner -->
             <img
               *ngIf="!isMe(m)"
               [src]="getAvatar(selectedConv)"
@@ -210,17 +199,124 @@
             />
 
             <div
-              class="flex flex-col max-w-[68%] min-w-0"
+              class="flex flex-col min-w-0 msg-bubble-wrap"
               [class.items-end]="isMe(m)"
               [class.items-start]="!isMe(m)"
+              style="max-width: 72%"
             >
+              <!-- ── Thu hồi: hiển thị label thay bubble ── -->
               <div
-                class="msg-bubble text-sm"
-                [class.bubble--me]="isMe(m)"
-                [class.bubble--them]="!isMe(m)"
+                *ngIf="isRecalledForMe(m)"
+                class="recalled-bubble"
+                [class.recalled-me]="isMe(m)"
+                [class.recalled-them]="!isMe(m)"
+                (contextmenu)="$event.preventDefault()"
               >
-                {{ getMessageText(m) }}
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  style="flex-shrink: 0"
+                >
+                  <polyline points="1,4 1,10 7,10" />
+                  <path d="M3.51 15a9 9 0 1 0 .49-4.64" />
+                </svg>
+                Tin nhắn đã bị thu hồi
               </div>
+
+              <!-- ── Bubble bình thường ── -->
+              <ng-container *ngIf="!isRecalledForMe(m)">
+                <div
+                  class="msg-bubble"
+                  [class.bubble--me]="isMe(m)"
+                  [class.bubble--them]="!isMe(m)"
+                  [class.bubble--has-media]="getDisplayAttachments(m).length > 0"
+                  [class.bubble--failed]="!!m._failed"
+                  (contextmenu)="onMessageContextMenu($event, m)"
+                  (touchstart)="onTouchStart($event, m)"
+                  (touchend)="onTouchEnd()"
+                  (touchmove)="onTouchMove()"
+                >
+                  <!-- Media grid -->
+                  <ng-container *ngIf="getDisplayAttachments(m).length > 0">
+                    <div
+                      class="media-grid"
+                      [class.media-grid--1]="getDisplayAttachments(m).length === 1"
+                      [class.media-grid--2]="getDisplayAttachments(m).length >= 2"
+                    >
+                      <div *ngIf="m._uploading" class="media-upload-overlay">
+                        <div class="upload-spinner"></div>
+                        <span class="upload-label">Đang tải lên…</span>
+                      </div>
+
+                      <ng-container
+                        *ngFor="
+                          let att of getDisplayAttachments(m);
+                          trackBy: trackByIdx;
+                          let i = index
+                        "
+                      >
+                        <div
+                          *ngIf="att.fileType === 'IMAGE'"
+                          class="media-cell"
+                          [class.media-cell--uploading]="m._uploading"
+                          (click)="!m._uploading && openLightbox(getDisplayAttachments(m), i)"
+                          [class.cursor-pointer]="!m._uploading"
+                        >
+                          <img [src]="att.url" class="media-img" alt="Ảnh" loading="lazy" />
+                        </div>
+                        <div
+                          *ngIf="att.fileType === 'VIDEO'"
+                          class="media-cell media-cell--video"
+                          [class.media-cell--uploading]="m._uploading"
+                        >
+                          <video
+                            [src]="att.url"
+                            class="media-video"
+                            controls
+                            preload="metadata"
+                            playsinline
+                          ></video>
+                          <span class="video-badge">▶ VIDEO</span>
+                        </div>
+                      </ng-container>
+                    </div>
+                    <div *ngIf="m._failed" class="media-failed">⚠️ Gửi thất bại. Thử lại sau.</div>
+                  </ng-container>
+
+                  <!-- Text -->
+                  <p
+                    *ngIf="getMessageText(m)"
+                    class="bubble-text"
+                    [class.has-media]="getDisplayAttachments(m).length > 0"
+                  >
+                    {{ getMessageText(m) }}
+                  </p>
+                </div>
+
+                <!-- ── Reactions hiển thị dưới bubble ── -->
+                <div
+                  *ngIf="getReactionEntries(m).length > 0"
+                  class="reaction-bar"
+                  [class.reaction-bar--me]="isMe(m)"
+                  [class.reaction-bar--them]="!isMe(m)"
+                >
+                  <span
+                    *ngFor="let r of getReactionEntries(m)"
+                    class="reaction-chip"
+                    [class.reaction-chip--mine]="m.myReaction === r.emoji"
+                    (click)="contextMenu.message = m; sendReaction(r.emoji)"
+                  >
+                    {{ r.emoji
+                    }}<span *ngIf="r.count > 1" class="reaction-count">{{ r.count }}</span>
+                  </span>
+                </div>
+              </ng-container>
+
+              <!-- Timestamp -->
               <span class="text-[10px] text-gray-400 mt-1 px-1">
                 {{ formatMessageTime(m.createdAt || m.created_at || '') }}
               </span>
@@ -229,43 +325,278 @@
         </ng-container>
       </div>
 
-      <!-- Input -->
-      <footer
-        *ngIf="selectedConv"
-        class="flex items-center gap-2 px-3 py-3 bg-white border-t border-gray-100 flex-shrink-0"
-      >
-        <input
-          [(ngModel)]="messageText"
-          (keydown)="onKeyDown($event)"
-          placeholder="Nhập tin nhắn..."
-          autocomplete="off"
-          class="flex-1 min-w-0 px-4 py-2.5 bg-gray-100 rounded-2xl text-sm text-gray-900 outline-none placeholder-gray-400 focus:ring-2 focus:ring-emerald-400 focus:bg-white transition-all"
-        />
+      <!-- ── Footer ── -->
+      <ng-container *ngIf="selectedConv">
+        <!-- Pending files preview bar -->
+        <div *ngIf="pendingFiles.length > 0" class="pending-bar">
+          <div class="pending-scroll">
+            <div
+              *ngFor="let pf of pendingFiles; let i = index; trackBy: trackByIdx"
+              class="pending-item"
+            >
+              <img
+                *ngIf="pf.fileType === 'IMAGE'"
+                [src]="pf.previewUrl"
+                class="pending-thumb"
+                alt="preview"
+              />
+              <div *ngIf="pf.fileType === 'VIDEO'" class="pending-video-wrap">
+                <video
+                  [src]="pf.previewUrl"
+                  class="pending-thumb"
+                  preload="metadata"
+                  muted
+                  playsinline
+                ></video>
+                <span class="pending-video-badge">▶</span>
+              </div>
+              <button (click)="removePendingFile(i)" class="pending-remove" title="Xóa">
+                <svg
+                  width="10"
+                  height="10"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="3.5"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+            <button
+              *ngIf="pendingFiles.length < 5"
+              (click)="triggerFileInput()"
+              class="pending-add-btn"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+            </button>
+          </div>
+          <p class="pending-count">{{ pendingFiles.length }}/5 file</p>
+        </div>
 
-        <button
-          (click)="send()"
-          [disabled]="!messageText.trim()"
-          class="w-10 h-10 flex items-center justify-center rounded-full transition-all duration-200 flex-shrink-0"
-          [class.bg-emerald-500]="messageText.trim()"
-          [class.text-white]="messageText.trim()"
-          [class.hover:bg-emerald-600]="!!messageText.trim()"
-          [class.bg-gray-200]="!messageText.trim()"
-          [class.text-gray-400]="!messageText.trim()"
-          [class.cursor-not-allowed]="!messageText.trim()"
+        <!-- Input bar -->
+        <footer
+          class="flex items-center gap-2 px-3 py-3 bg-white border-t border-gray-100 flex-shrink-0"
         >
-          <svg
-            width="17"
-            height="17"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.5"
+          <button
+            *ngIf="pendingFiles.length === 0"
+            (click)="triggerFileInput()"
+            title="Gửi ảnh/video (tối đa 5 file, mỗi file ≤ 10 MB)"
+            class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 flex-shrink-0 transition-colors"
           >
-            <line x1="22" y1="2" x2="11" y2="13" />
-            <polygon points="22,2 15,22 11,13 2,9" />
-          </svg>
-        </button>
-      </footer>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <rect x="3" y="3" width="18" height="18" rx="3" />
+              <circle cx="8.5" cy="8.5" r="1.5" />
+              <polyline points="21,15 16,10 5,21" />
+            </svg>
+          </button>
+          <input
+            #fileInput
+            type="file"
+            class="hidden"
+            multiple
+            accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/quicktime"
+            (change)="onFileSelected($event)"
+          />
+          <input
+            [(ngModel)]="messageText"
+            (keydown)="onKeyDown($event)"
+            autocomplete="off"
+            [placeholder]="pendingFiles.length ? 'Thêm chú thích (tùy chọn)…' : 'Nhập tin nhắn…'"
+            class="flex-1 min-w-0 px-4 py-2.5 bg-gray-100 rounded-2xl text-sm text-gray-900 outline-none placeholder-gray-400 focus:ring-2 focus:ring-emerald-400 focus:bg-white transition-all"
+          />
+          <button
+            (click)="send()"
+            [disabled]="!messageText.trim() && !pendingFiles.length"
+            class="w-10 h-10 flex items-center justify-center rounded-full transition-all duration-200 flex-shrink-0"
+            [class.bg-emerald-500]="messageText.trim() || pendingFiles.length"
+            [class.text-white]="messageText.trim() || pendingFiles.length"
+            [class.hover:bg-emerald-600]="!!(messageText.trim() || pendingFiles.length)"
+            [class.bg-gray-200]="!messageText.trim() && !pendingFiles.length"
+            [class.text-gray-400]="!messageText.trim() && !pendingFiles.length"
+            [class.cursor-not-allowed]="!messageText.trim() && !pendingFiles.length"
+          >
+            <svg
+              width="17"
+              height="17"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+            >
+              <line x1="22" y1="2" x2="11" y2="13" />
+              <polygon points="22,2 15,22 11,13 2,9" />
+            </svg>
+          </button>
+        </footer>
+      </ng-container>
     </main>
+  </div>
+</div>
+
+<!-- ─────────────── CONTEXT MENU ─────────────── -->
+<div
+  *ngIf="contextMenu.open"
+  class="msg-context-menu"
+  [style.left.px]="contextMenu.x"
+  [style.top.px]="contextMenu.y"
+>
+  <!-- Reaction bar -->
+  <div class="ctx-emoji-row">
+    <button
+      *ngFor="let emoji of reactionEmojis"
+      class="ctx-emoji-btn"
+      [class.ctx-emoji-active]="contextMenu.message?.myReaction === emoji"
+      (click)="sendReaction(emoji)"
+      [title]="emoji"
+    >
+      {{ emoji }}
+    </button>
+  </div>
+
+  <div class="ctx-divider"></div>
+
+  <!-- Thu hồi (chỉ hiện nếu là tin nhắn của mình) -->
+  <ng-container *ngIf="contextMenu.message && canRecall(contextMenu.message)">
+    <button class="ctx-item ctx-item--danger" (click)="recallForMe()">
+      <svg
+        width="15"
+        height="15"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <polyline points="1,4 1,10 7,10" />
+        <path d="M3.51 15a9 9 0 1 0 .49-4.64" />
+      </svg>
+      Thu hồi ở phía tôi
+    </button>
+    <button class="ctx-item ctx-item--danger" (click)="recallForAll()">
+      <svg
+        width="15"
+        height="15"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <polyline points="1,4 1,10 7,10" />
+        <path d="M3.51 15a9 9 0 1 0 .49-4.64" />
+      </svg>
+      Thu hồi tất cả
+    </button>
+  </ng-container>
+
+  <!-- Đóng -->
+  <div class="ctx-divider"></div>
+  <button class="ctx-item" (click)="closeContextMenu()">
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+    >
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+    Đóng
+  </button>
+</div>
+
+<!-- Backdrop đóng context menu khi click ngoài -->
+<div *ngIf="contextMenu.open" class="ctx-backdrop" (click)="closeContextMenu()"></div>
+
+<!-- ─────────────── LIGHTBOX ─────────────── -->
+<div
+  *ngIf="lightbox.open"
+  class="lightbox-backdrop"
+  (click)="closeLightbox()"
+  (keydown.escape)="closeLightbox()"
+>
+  <button class="lb-close" (click)="closeLightbox()" title="Đóng">
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2.5"
+    >
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  </button>
+  <span class="lb-counter">{{ lightbox.index + 1 }} / {{ lightbox.items.length }}</span>
+  <button
+    *ngIf="lightbox.items.length > 1"
+    class="lb-nav lb-prev"
+    (click)="lbPrev($event)"
+    title="Ảnh trước"
+  >
+    <svg
+      width="28"
+      height="28"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2.5"
+    >
+      <polyline points="15,18 9,12 15,6" />
+    </svg>
+  </button>
+  <div class="lb-img-wrap" (click)="$event.stopPropagation()">
+    <img
+      [src]="lightbox.items[lightbox.index].url"
+      class="lb-img"
+      [alt]="'Ảnh ' + (lightbox.index + 1)"
+    />
+  </div>
+  <button
+    *ngIf="lightbox.items.length > 1"
+    class="lb-nav lb-next"
+    (click)="lbNext($event)"
+    title="Ảnh sau"
+  >
+    <svg
+      width="28"
+      height="28"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2.5"
+    >
+      <polyline points="9,18 15,12 9,6" />
+    </svg>
+  </button>
+  <div *ngIf="lightbox.items.length > 1" class="lb-strip" (click)="$event.stopPropagation()">
+    <img
+      *ngFor="let it of lightbox.items; let i = index; trackBy: trackByIdx"
+      [src]="it.url"
+      class="lb-thumb"
+      [class.lb-thumb--active]="i === lightbox.index"
+      (click)="lightbox.index = i"
+      [alt]="'Ảnh ' + (i + 1)"
+    />
   </div>
 </div>
