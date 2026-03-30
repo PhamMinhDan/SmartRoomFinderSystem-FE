@@ -32,6 +32,7 @@ interface Room {
   postTier?: string;
   isApproved: boolean;
   isActive: boolean;
+  rejectedByAdmin: boolean;
   displayUntil?: string;
   hiddenReason?: string;
   images: RoomImage[];
@@ -196,15 +197,15 @@ export class ManagePostsComponent implements OnInit, OnDestroy {
 
   updateTabCounts() {
     const now = new Date();
-    this.tabs[0].count = this.rooms.filter((r) => r.isApproved && r.isActive).length;
+    this.tabs[0].count = this.rooms.filter(
+      (r) => r.isApproved && r.isActive && (!r.displayUntil || new Date(r.displayUntil) >= now),
+    ).length;
     this.tabs[1].count = this.rooms.filter(
       (r) => r.displayUntil && new Date(r.displayUntil) < now,
     ).length;
-
-    // Bị từ chối (tạm = chưa duyệt)
-    this.tabs[2].count = this.rooms.filter((r) => !r.isApproved).length;
-    this.tabs[3].count = this.rooms.filter((r) => !r.isApproved).length;
-    this.tabs[4].count = this.rooms.filter((r) => !r.isActive).length;
+    this.tabs[2].count = this.rooms.filter((r) => r.rejectedByAdmin).length;
+    this.tabs[3].count = this.rooms.filter((r) => !r.isApproved && !r.rejectedByAdmin).length;
+    this.tabs[4].count = this.rooms.filter((r) => r.isApproved && !r.isActive).length;
   }
 
   onSearch() {
@@ -226,16 +227,18 @@ export class ManagePostsComponent implements OnInit, OnDestroy {
       );
     }
 
-    if (this.activeTab === 'hidden') {
-      list = list.filter((r) => !r.isActive);
+    if (this.activeTab === 'all') {
+      list = list.filter(
+        (r) => r.isApproved && r.isActive && (!r.displayUntil || new Date(r.displayUntil) >= now),
+      );
     } else if (this.activeTab === 'expired') {
-      list = list.filter((r) => r.expiredAt && new Date(r.expiredAt) < now);
+      list = list.filter((r) => r.displayUntil && new Date(r.displayUntil) < now);
     } else if (this.activeTab === 'rejected') {
-      list = list.filter((r) => !r.isApproved && r.displayUntil == null);
+      list = list.filter((r) => r.rejectedByAdmin);
     } else if (this.activeTab === 'pending') {
-      list = list.filter((r) => !r.isApproved);
-    } else if (this.activeTab === 'all') {
-      list = list.filter((r) => r.isApproved && r.isActive);
+      list = list.filter((r) => !r.isApproved && !r.rejectedByAdmin);
+    } else if (this.activeTab === 'hidden') {
+      list = list.filter((r) => r.isApproved && !r.isActive);
     }
 
     this.filteredRooms = list;

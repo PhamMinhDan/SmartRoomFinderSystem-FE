@@ -233,7 +233,7 @@
                   </span>
                 </div>
                 <div
-                  *ngIf="!room.isActive"
+                  *ngIf="!room.isActive && !room.rejectedByAdmin"
                   class="mt-2 bg-red-50 border border-red-200 text-red-600 text-xs px-3 py-2 rounded-lg"
                 >
                   <span class="font-semibold">Đã ẩn:</span>
@@ -248,7 +248,7 @@
                 </div>
 
                 <div
-                  *ngIf="!room.isApproved && !room.displayUntil"
+                  *ngIf="room.rejectedByAdmin"
                   class="mt-2 bg-yellow-50 text-yellow-700 text-xs px-3 py-2 rounded-lg"
                 >
                   Đã bị từ chối
@@ -261,11 +261,15 @@
                   [ngClass]="
                     room.isApproved
                       ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                      : 'bg-amber-50 text-amber-700 border-amber-200'
+                      : room.rejectedByAdmin
+                        ? 'bg-red-50 text-red-600 border-red-200'
+                        : 'bg-amber-50 text-amber-700 border-amber-200'
                   "
                   class="text-xs font-semibold px-2.5 py-1 rounded-full border whitespace-nowrap"
                 >
-                  {{ room.isApproved ? 'Đã duyệt' : 'Chờ duyệt' }}
+                  {{
+                    room.isApproved ? 'Đã duyệt' : room.rejectedByAdmin ? 'Bị từ chối' : 'Chờ duyệt'
+                  }}
                 </span>
               </div>
             </div>
@@ -278,10 +282,14 @@
                 [ngClass]="
                   room.isApproved
                     ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                    : 'bg-amber-50 text-amber-700 border-amber-200'
+                    : room.rejectedByAdmin
+                      ? 'bg-red-50 text-red-600 border-red-200'
+                      : 'bg-amber-50 text-amber-700 border-amber-200'
                 "
               >
-                {{ room.isApproved ? 'Đã duyệt' : 'Chờ duyệt' }}
+                {{
+                  room.isApproved ? 'Đã duyệt' : room.rejectedByAdmin ? 'Bị từ chối' : 'Chờ duyệt'
+                }}
               </span>
               <div class="flex gap-2 ml-auto">
                 <button
@@ -325,7 +333,7 @@
                     </button>
 
                     <button
-                      *ngIf="!room.isActive"
+                      *ngIf="!room.isActive && !room.rejectedByAdmin"
                       (click)="unhideRoom(room.roomId)"
                       class="w-full px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 text-left"
                     >
