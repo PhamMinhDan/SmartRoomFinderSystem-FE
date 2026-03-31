@@ -620,7 +620,7 @@ export class RoomDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
   editRoom() {
     if (!this.room) return;
-    this.router.navigate(['/rooms/edit', this.room.roomId]);
+    this.router.navigate(['/edit-room', this.room.roomId]);
   }
 
   toggleRoomActiveStatus() {

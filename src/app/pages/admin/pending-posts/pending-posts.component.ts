@@ -6,8 +6,10 @@ import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 
-type Tab = 'all' | 'verifications' | 'reports';
+// ── Tab type (thêm 'edit-requests') ─────────────────────────────────────────
+type Tab = 'all' | 'verifications' | 'reports' | 'edit-requests';
 
+// ── Interfaces giữ nguyên ────────────────────────────────────────────────────
 interface PendingPost {
   id: number;
   image: string;
@@ -59,6 +61,41 @@ interface ReportItem {
   createdAt: string;
 }
 
+// ── Interface mới cho edit request ──────────────────────────────────────────
+interface RoomSnapshot {
+  title?: string;
+  description?: string;
+  pricePerMonth?: number;
+  depositAmount?: number;
+  areaSize?: number;
+  capacity?: number;
+  roomType?: string;
+  furnishLevel?: string;
+  availableFrom?: string;
+  streetAddress?: string;
+  wardName?: string;
+  districtName?: string;
+  cityName?: string;
+  mediaUrls?: string[];
+  amenityNames?: string[];
+}
+
+interface EditRequestItem {
+  versionId: number;
+  roomId: number;
+  status: string;
+  rejectReason?: string;
+  createdAt: string;
+  reviewedAt?: string;
+  landlordId: string;
+  landlordName: string;
+  landlordEmail: string;
+  landlordPhone?: string;
+  landlordAvatar?: string;
+  oldData?: RoomSnapshot;
+  newData?: RoomSnapshot;
+}
+
 @Component({
   selector: 'app-pending-posts',
   standalone: true,
@@ -73,10 +110,10 @@ export class PendingPostsComponent implements OnInit {
 
   // Toast
   toastMsg = '';
-  toastType: 'success' | 'error' = 'success';
+  toastType: 'success' | 'error' | 'warning' | 'info' = 'success';
   private toastTimer: any;
 
-  // Reject modal
+  // Reject modal (room)
   showRejectModal = false;
   rejectReason = '';
   rejectTargetId: number | null = null;
@@ -97,9 +134,18 @@ export class PendingPostsComponent implements OnInit {
   rejectVerifyTargetId: number | null = null;
   rejectVerifyReason = '';
 
+  // ── Edit request modal ─────────────────────────────────────────
+  showRejectEditModal = false;
+  rejectEditTargetId: number | null = null;
+  rejectEditReason = '';
+
+  showEditDetailModal = false;
+  editDetailItem: EditRequestItem | null = null;
+
   posts: PendingPost[] = [];
   verifications: VerificationItem[] = [];
   reports: ReportItem[] = [];
+  editRequests: EditRequestItem[] = [];
 
   // Pagination — posts
   currentPage = 0;
@@ -117,6 +163,11 @@ export class PendingPostsComponent implements OnInit {
   reportTotalPages = 0;
   reportTotal = 0;
 
+  // Pagination — edit requests
+  editPage = 0;
+  editTotalPages = 0;
+  editTotal = 0;
+
   constructor(
     private http: HttpClient,
     private router: Router,
@@ -126,9 +177,10 @@ export class PendingPostsComponent implements OnInit {
     this.loadRooms();
     this.loadVerifications();
     this.loadReports();
+    this.loadEditRequests();
   }
 
-  // ── Load pending posts ───────────────────────────────────────
+  // ── Load pending posts ─────────────────────────────────────────
   async loadRooms() {
     this.loading = true;
     try {
@@ -187,7 +239,7 @@ export class PendingPostsComponent implements OnInit {
     }
   }
 
-  // ── Load verifications ───────────────────────────────────────
+  // ── Load verifications ────────────────────────────────────────
   async loadVerifications() {
     try {
       const res: any = await firstValueFrom(
@@ -216,7 +268,7 @@ export class PendingPostsComponent implements OnInit {
     }
   }
 
-  // ── Load reports ─────────────────────────────────────────────
+  // ── Load reports ──────────────────────────────────────────────
   async loadReports() {
     try {
       const res: any = await firstValueFrom(
@@ -245,16 +297,45 @@ export class PendingPostsComponent implements OnInit {
     }
   }
 
+  // ── Load edit requests ────────────────────────────────────────
+  async loadEditRequests() {
+    try {
+      const res: any = await firstValueFrom(
+        this.http.get(`${environment.apiUrl}/admin/edit-requests`, {
+          params: {
+            status: 'PENDING',
+            page: this.editPage.toString(),
+            size: this.pageSize.toString(),
+          },
+        }),
+      );
+
+      if (res?.data) {
+        this.editRequests = res.data.content || [];
+        this.editTotalPages = res.data.totalPages || 0;
+        this.editTotal = res.data.totalElements || 0;
+      } else {
+        this.editRequests = [];
+        this.editTotalPages = 0;
+        this.editTotal = 0;
+      }
+    } catch {
+      this.editRequests = [];
+      this.editTotalPages = 0;
+      this.editTotal = 0;
+    }
+  }
+
   filteredPosts() {
     return this.posts;
   }
 
-  // ── Navigate to room detail ──────────────────────────────────
+  // ── Navigate to room detail ───────────────────────────────────
   viewRoomDetail(roomId: number) {
     this.router.navigate(['/admin/room-detail', roomId]);
   }
 
-  // ── Approve room ─────────────────────────────────────────────
+  // ── Approve room ──────────────────────────────────────────────
   async approveRoom(roomId: number) {
     const post = this.posts.find((p) => p.id === roomId);
 
@@ -292,13 +373,11 @@ export class PendingPostsComponent implements OnInit {
     }
   }
 
-  // ── Go to verifications tab from warning modal ───────────────
   goToVerificationsTab() {
     this.closeVerifyWarningModal();
     this.selectedTab.set('verifications');
   }
 
-  // ── Approve verification from card phòng ────────────────────
   async approveVerificationFromCard(verificationId: number, roomId: number) {
     try {
       await firstValueFrom(
@@ -306,7 +385,6 @@ export class PendingPostsComponent implements OnInit {
       );
       this.showToast('Đã duyệt xác thực danh tính! Tiến hành duyệt tin đăng...', 'success');
       this.closeVerifyWarningModal();
-
       await this.loadRooms();
       await this.loadVerifications();
       await this.doApproveRoom(roomId);
@@ -326,7 +404,6 @@ export class PendingPostsComponent implements OnInit {
     this.verifyWarningPost = null;
   }
 
-  // ── Approve verification from verification tab ───────────────
   async approveVerification(verificationId: number) {
     try {
       await firstValueFrom(
@@ -345,7 +422,6 @@ export class PendingPostsComponent implements OnInit {
     }
   }
 
-  // ── Reject verification ──────────────────────────────────────
   openRejectVerifyModal(verificationId: number) {
     this.rejectVerifyTargetId = verificationId;
     this.rejectVerifyReason = '';
@@ -382,7 +458,6 @@ export class PendingPostsComponent implements OnInit {
     }
   }
 
-  // ── Reject room ──────────────────────────────────────────────
   openRejectModal(roomId: number) {
     this.rejectTargetId = roomId;
     this.rejectReason = '';
@@ -419,7 +494,6 @@ export class PendingPostsComponent implements OnInit {
     }
   }
 
-  // ── Resolve report ───────────────────────────────────────────
   openResolveModal(reportId: number, defaultStatus: 'RESOLVED' | 'DISMISSED' = 'RESOLVED') {
     this.resolveTargetId = reportId;
     this.resolveStatus = defaultStatus;
@@ -459,7 +533,82 @@ export class PendingPostsComponent implements OnInit {
     }
   }
 
-  // ── Pagination ───────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════════
+  // Edit Request actions
+  // ══════════════════════════════════════════════════════════════
+
+  /** Mở modal xem chi tiết diff */
+  openEditDetail(item: EditRequestItem) {
+    this.editDetailItem = item;
+    this.showEditDetailModal = true;
+  }
+
+  closeEditDetailModal() {
+    this.showEditDetailModal = false;
+    this.editDetailItem = null;
+  }
+
+  /** Admin duyệt edit request */
+  async approveEditRequest(versionId: number) {
+    try {
+      await firstValueFrom(
+        this.http.patch(`${environment.apiUrl}/admin/edit-requests/${versionId}/approve`, {}),
+      );
+      this.showToast(
+        '✅ Đã phê duyệt yêu cầu chỉnh sửa. Thông báo đã gửi cho landlord.',
+        'success',
+      );
+      this.closeEditDetailModal();
+      await this.loadEditRequests();
+    } catch (err: any) {
+      this.showToast(
+        err instanceof HttpErrorResponse
+          ? err.error?.message || 'Phê duyệt thất bại'
+          : 'Phê duyệt thất bại',
+        'error',
+      );
+    }
+  }
+
+  /** Mở modal từ chối edit request */
+  openRejectEditModal(versionId: number) {
+    this.rejectEditTargetId = versionId;
+    this.rejectEditReason = '';
+    this.showRejectEditModal = true;
+    this.showEditDetailModal = false; // đóng detail nếu đang mở
+  }
+
+  closeRejectEditModal() {
+    this.showRejectEditModal = false;
+    this.rejectEditTargetId = null;
+    this.rejectEditReason = '';
+  }
+
+  async confirmRejectEdit() {
+    if (!this.rejectEditTargetId) return;
+    try {
+      await firstValueFrom(
+        this.http.patch(
+          `${environment.apiUrl}/admin/edit-requests/${this.rejectEditTargetId}/reject`,
+          {},
+          { params: { reason: this.rejectEditReason || 'Nội dung không phù hợp' } },
+        ),
+      );
+      this.showToast('Đã từ chối yêu cầu chỉnh sửa. Thông báo đã gửi cho landlord.', 'success');
+      await this.loadEditRequests();
+    } catch (err: any) {
+      this.showToast(
+        err instanceof HttpErrorResponse
+          ? err.error?.message || 'Từ chối thất bại'
+          : 'Từ chối thất bại',
+        'error',
+      );
+    } finally {
+      this.closeRejectEditModal();
+    }
+  }
+
+  // ── Pagination ────────────────────────────────────────────────
   changePage(page: number) {
     if (page < 0 || page >= this.totalPages) return;
     this.currentPage = page;
@@ -476,6 +625,12 @@ export class PendingPostsComponent implements OnInit {
     if (page < 0 || page >= this.reportTotalPages) return;
     this.reportPage = page;
     this.loadReports();
+  }
+
+  changeEditPage(page: number) {
+    if (page < 0 || page >= this.editTotalPages) return;
+    this.editPage = page;
+    this.loadEditRequests();
   }
 
   pageRange(): number[] {
@@ -496,7 +651,13 @@ export class PendingPostsComponent implements OnInit {
     return Array.from({ length: end - start + 1 }, (_, i) => start + i);
   }
 
-  // ── Checkbox ─────────────────────────────────────────────────
+  editPageRange(): number[] {
+    const start = Math.max(0, this.editPage - 2);
+    const end = Math.min(this.editTotalPages - 1, this.editPage + 2);
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+  }
+
+  // ── Checkbox ──────────────────────────────────────────────────
   isSelected(id: number): boolean {
     return this.selectedPosts().includes(id);
   }
@@ -521,7 +682,7 @@ export class PendingPostsComponent implements OnInit {
     return this.selectedPosts().length === filtered.length && filtered.length > 0;
   }
 
-  // ── Helpers ──────────────────────────────────────────────────
+  // ── Helpers ───────────────────────────────────────────────────
   formatPrice(price: number | null | undefined): string {
     if (!price) return '—';
     if (price >= 1_000_000) {
@@ -572,14 +733,23 @@ export class PendingPostsComponent implements OnInit {
     return map[status] || '';
   }
 
-  showToast(msg: string, type: 'success' | 'error') {
+  /** Kiểm tra 2 giá trị có khác nhau không (để highlight diff) */
+  isDiff(oldVal: any, newVal: any): boolean {
+    if (oldVal == null && newVal == null) return false;
+    return String(oldVal ?? '') !== String(newVal ?? '');
+  }
+
+  showToast(msg: string, type: 'success' | 'error' | 'warning' | 'info' = 'success') {
     this.toastMsg = msg;
     this.toastType = type;
     clearTimeout(this.toastTimer);
-    this.toastTimer = setTimeout(() => (this.toastMsg = ''), 4000);
+    this.toastTimer = setTimeout(() => (this.toastMsg = ''), 4500);
   }
 
   ngOnDestroy() {
     clearTimeout(this.toastTimer);
+  }
+  getAddress(data: any): string {
+    return [data?.streetAddress, data?.districtName, data?.cityName].filter((v) => !!v).join(', ');
   }
 }

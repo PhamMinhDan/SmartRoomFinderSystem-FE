@@ -56,6 +56,11 @@
   color: white;
 }
 
+.tab-btn.active-edit {
+  background: #f97316;
+  color: white;
+}
+
 /* Bulk bar */
 .bulk-bar {
   display: flex;
