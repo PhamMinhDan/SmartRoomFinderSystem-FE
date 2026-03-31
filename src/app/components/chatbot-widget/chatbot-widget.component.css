@@ -1,8 +1,8 @@
 /* ── FAB ─────────────────────────────────────────────── */
 .chatbot-fab {
   position: fixed;
-  bottom: 28px;
-  right: 28px;
+  bottom: 60px;
+  right: 35px;
   z-index: 1000;
   width: 54px;
   height: 54px;
@@ -14,13 +14,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 20px rgba(249,115,22,0.4);
-  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 20px rgba(249, 115, 22, 0.4);
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
 }
 
 .chatbot-fab:hover {
   transform: scale(1.08);
-  box-shadow: 0 6px 28px rgba(249,115,22,0.55);
+  box-shadow: 0 6px 28px rgba(249, 115, 22, 0.55);
 }
 
 .fab-pulse {
@@ -28,14 +30,20 @@
   width: 54px;
   height: 54px;
   border-radius: 50%;
-  background: rgba(249,115,22,0.3);
+  background: rgba(249, 115, 22, 0.3);
   animation: fabPulse 2s ease-out infinite;
   pointer-events: none;
 }
 
 @keyframes fabPulse {
-  0%   { transform: scale(1); opacity: 0.8; }
-  100% { transform: scale(1.8); opacity: 0; }
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
 }
 
 /* ── Window ──────────────────────────────────────────── */
@@ -48,14 +56,18 @@
   max-height: 540px;
   border-radius: 20px;
   background: #ffffff;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15), 0 4px 16px rgba(0, 0, 0, 0.08);
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.15),
+    0 4px 16px rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   opacity: 0;
   transform: translateY(16px) scale(0.97);
   pointer-events: none;
-  transition: opacity 0.25s ease, transform 0.25s ease;
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
 }
 
 .chatbot-window.visible {
@@ -94,8 +106,13 @@
 }
 
 @keyframes blink {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.35; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
 }
 
 .header-btn {
@@ -134,9 +151,16 @@
   gap: 10px;
 }
 
-.messages-area::-webkit-scrollbar { width: 3px; }
-.messages-area::-webkit-scrollbar-track { background: transparent; }
-.messages-area::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 4px; }
+.messages-area::-webkit-scrollbar {
+  width: 3px;
+}
+.messages-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+.messages-area::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 4px;
+}
 
 .msg-row {
   display: flex;
@@ -202,12 +226,22 @@
   animation: typeBounce 1.2s ease-in-out infinite;
 }
 
-.typing-dots span:nth-child(2) { animation-delay: 0.2s; }
-.typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+.typing-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.typing-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
 
 @keyframes typeBounce {
-  0%, 60%, 100% { transform: translateY(0); }
-  30%           { transform: translateY(-6px); }
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-6px);
+  }
 }
 
 /* ── Quick questions ─────────────────────────────────── */
@@ -271,7 +305,9 @@
   outline: none;
   background: #f8fafc;
   color: #1e293b;
-  transition: border-color 0.15s, background 0.15s;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
 }
 
 .chat-input:focus {
@@ -303,7 +339,7 @@
 }
 
 /* ── Responsive ──────────────────────────────────────── */
-@media (max-width: 480px) {
+@media (max-width: 789px) {
   .chatbot-window {
     width: calc(100vw - 20px);
     right: 10px;
@@ -313,6 +349,6 @@
 
   .chatbot-fab {
     right: 16px;
-    bottom: 20px;
+    bottom: 85px;
   }
 }

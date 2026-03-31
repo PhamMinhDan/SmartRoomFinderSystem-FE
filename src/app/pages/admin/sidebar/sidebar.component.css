@@ -13,6 +13,14 @@
   opacity: 1;
   pointer-events: auto;
 }
+.logo_header {
+  width: 70px;
+  height: 50px;
+  margin: 12px 0 0 10px;
+  padding: 0 25px 0 0;
+  transform: scale(1.5);
+  transform-origin: left center;
+}
 
 .sidebar {
   position: fixed;
@@ -54,13 +62,13 @@
 .logo-icon {
   width: 1.5rem;
   height: 1.5rem;
-  color: #00C897;
+  color: #00c897;
 }
 
 .logo-pin {
   width: 0.75rem;
   height: 0.75rem;
-  color: #FF6B6B;
+  color: #ff6b6b;
   position: absolute;
   bottom: -2px;
   right: -2px;
@@ -74,7 +82,7 @@
 }
 
 .logo-accent {
-  color: #00C897;
+  color: #00c897;
 }
 
 .close-btn {
@@ -112,7 +120,9 @@
   text-decoration: none;
   font-size: 0.9375rem;
   font-weight: 500;
-  transition: background 0.2s, color 0.2s;
+  transition:
+    background 0.2s,
+    color 0.2s;
   border-left: 4px solid transparent;
 }
 
@@ -123,8 +133,8 @@
 
 .nav-item.active {
   background: rgba(0, 200, 151, 0.1);
-  color: #00C897;
-  border-left-color: #00C897;
+  color: #00c897;
+  border-left-color: #00c897;
 }
 
 .nav-icon {
@@ -150,7 +160,7 @@
   width: 2.5rem;
   height: 2.5rem;
   border-radius: 50%;
-  background: linear-gradient(135deg, #00C897, #FF6B6B);
+  background: linear-gradient(135deg, #00c897, #ff6b6b);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -186,7 +196,7 @@
 }
 
 .logout-btn:hover {
-  color: #FF6B6B;
+  color: #ff6b6b;
 }
 
 /* Desktop */

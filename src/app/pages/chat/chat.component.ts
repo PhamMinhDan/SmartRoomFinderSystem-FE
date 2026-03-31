@@ -11,7 +11,9 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 import { Subscription } from 'rxjs';
+import { take } from 'rxjs/operators';
 import {
   ChatService,
   ChatMessagePayload,
@@ -20,6 +22,50 @@ import {
 } from '../../services/chat.service';
 import { AuthService } from '../../services/auth.service';
 import { ChatCrypto } from '../../utils/chat-crypto.util';
+import { environment } from '../../../environments/environment';
+
+// ── Room Card (encode vào message text, không cần thay đổi backend) ──────────
+export const ROOM_CARD_PREFIX = '[ROOM_CARD]:';
+
+export interface RoomCardData {
+  roomId: number;
+  title: string;
+  pricePerMonth: number;
+  areaSize: number;
+  imageUrl: string; // ảnh đại diện (primary)
+  address: string; // chuỗi địa chỉ rút gọn
+}
+
+export function encodeRoomCard(data: RoomCardData): string {
+  return ROOM_CARD_PREFIX + JSON.stringify(data);
+}
+
+export function parseRoomCard(text: string): {
+  card: RoomCardData | null;
+  extraText: string;
+} {
+  if (!text) return { card: null, extraText: '' };
+
+  const idx = text.indexOf(ROOM_CARD_PREFIX);
+  if (idx === -1) return { card: null, extraText: text };
+
+  try {
+    const afterPrefix = text.substring(idx + ROOM_CARD_PREFIX.length).trim();
+
+    const endIdx = afterPrefix.indexOf('}') + 1;
+    const jsonStr = afterPrefix.substring(0, endIdx);
+    const extra = afterPrefix.substring(endIdx).trim();
+
+    return {
+      card: JSON.parse(jsonStr),
+      extraText: extra,
+    };
+  } catch {
+    return { card: null, extraText: text };
+  }
+}
+
+// ── Interfaces ────────────────────────────────────────────────────────────────
 
 export interface Conversation {
   partnerId: string;
@@ -67,9 +113,11 @@ export interface DisplayMessage {
   _uploading?: boolean;
   _failed?: boolean;
   _localAttachments?: { previewUrl: string; fileType: 'IMAGE' | 'VIDEO' }[];
+
+  // Room card (parsed từ message text, dùng khi render)
+  _roomCard?: RoomCardData | null;
 }
 
-/** Context menu state */
 export interface ContextMenu {
   open: boolean;
   x: number;
@@ -80,7 +128,6 @@ export interface ContextMenu {
 const MAX_FILES = 5;
 const MAX_SIZE = 10 * 1024 * 1024;
 
-// Danh sách emoji reaction
 export const REACTION_EMOJIS = ['❤️', '👍', '😂', '😮', '😢', '😡'];
 
 @Component({
@@ -106,6 +153,10 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   pendingFiles: PendingFile[] = [];
 
+  // ── Room card preview (hiện phía trên input khi navigate từ trang phòng) ──
+  pendingRoomCard: RoomCardData | null = null;
+  roomCardLoading = false;
+
   lightbox: {
     open: boolean;
     items: { url: string; fileType: 'IMAGE' | 'VIDEO' }[];
@@ -114,7 +165,6 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   contextMenu: ContextMenu = { open: false, x: 0, y: 0, message: null };
 
-  /** Danh sách emoji */
   readonly reactionEmojis = REACTION_EMOJIS;
 
   private subs = new Subscription();
@@ -127,12 +177,13 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
+    private http: HttpClient,
     private chatService: ChatService,
     private authService: AuthService,
     private cdr: ChangeDetectorRef,
   ) {}
 
-  // ── Lifecycle ────────────────────────────────────────────────────
+  // ── Lifecycle ─────────────────────────────────────────────────────────────
 
   ngOnInit(): void {
     const user = this.authService.currentUserValue;
@@ -144,10 +195,15 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.chatService.connect(this.userId);
     this.subs.add(this.chatService.message$.subscribe((msg) => this.handleIncoming(msg)));
 
-    this.route.queryParamMap.subscribe((params) => {
+    this.route.queryParamMap.pipe(take(1)).subscribe((params) => {
       this.roomId = Number(params.get('roomId')) || 0;
       this.receiverIdFromRoute = params.get('receiverId') || '';
       this.loadConversations(this.receiverIdFromRoute || undefined);
+
+      // Nếu có roomId → fetch chi tiết phòng để tạo room card preview
+      if (this.roomId) {
+        this.fetchRoomCardPreview(this.roomId);
+      }
     });
   }
 
@@ -167,10 +223,49 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.clearLongPress();
   }
 
-  // ── Incoming socket ──────────────────────────────────────────────
+  // ── Fetch room card preview ────────────────────────────────────────────────
+
+  private fetchRoomCardPreview(roomId: number): void {
+    this.roomCardLoading = true;
+    this.http.get<any>(`${environment.apiUrl}/rooms/${roomId}`).subscribe({
+      next: (res) => {
+        const room = res?.data ?? res;
+        const primaryImage =
+          room.images?.find((img: any) => img.isPrimary)?.imageUrl ||
+          room.images?.[0]?.imageUrl ||
+          '';
+        const addr = room.address;
+        const addressStr = addr
+          ? [addr.street_address, addr.ward_name, addr.district_name, addr.city_name]
+              .filter(Boolean)
+              .join(', ')
+          : '';
+
+        this.pendingRoomCard = {
+          roomId: room.roomId,
+          title: room.title,
+          pricePerMonth: room.pricePerMonth,
+          areaSize: room.areaSize,
+          imageUrl: primaryImage,
+          address: addressStr,
+        };
+        this.roomCardLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.roomCardLoading = false;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  dismissRoomCard(): void {
+    this.pendingRoomCard = null;
+  }
+
+  // ── Incoming socket ───────────────────────────────────────────────────────
 
   private handleIncoming(msg: ChatMessagePayload): void {
-    // ── Thu hồi ──────────────────────────────────────────────────
     if (msg.type === 'RECALL') {
       const found = this.messages.find((m) => m.messageId === msg.messageId);
       if (found) {
@@ -181,7 +276,6 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
       return;
     }
 
-    // ── Reaction update ────────────────────────────────────────
     if (msg.type === 'REACTION_UPDATE') {
       const found = this.messages.find((m) => m.messageId === msg.messageId);
       if (found) {
@@ -217,10 +311,12 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
         const conv = this.conversations.find((c) => c.partnerId === senderId);
         if (conv) {
           conv.unreadCount++;
-          conv.lastMessage = this.sidebarPreview(msg);
-          conv.lastTime = msg.createdAt ?? '';
-          this.sortConvs();
-          this.cdr.detectChanges();
+          this.sidebarPreviewAsync(msg).then((preview) => {
+            conv.lastMessage = preview;
+            conv.lastTime = msg.createdAt ?? '';
+            this.sortConvs();
+            this.cdr.detectChanges();
+          });
           return;
         } else {
           this.loadConversations();
@@ -229,8 +325,12 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
       } else {
         const conv = this.conversations.find((c) => c.partnerId === receiverId);
         if (conv) {
-          conv.lastMessage = this.sidebarPreview(msg);
-          conv.lastTime = msg.createdAt ?? '';
+          this.sidebarPreviewAsync(msg).then((preview) => {
+            conv.lastMessage = preview;
+            conv.lastTime = msg.createdAt ?? '';
+            this.sortConvs();
+            this.cdr.detectChanges();
+          });
         }
       }
       this.sortConvs();
@@ -238,48 +338,107 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.cdr.detectChanges();
   }
 
-  private sidebarPreview(msg: ChatMessagePayload): string {
+  private async sidebarPreviewAsync(msg: ChatMessagePayload): Promise<string> {
     if (msg.attachments?.length) {
       const hasVideo = msg.attachments.some((a) => a.fileType === 'VIDEO');
       return hasVideo ? '[Video]' : '[Hình ảnh]';
     }
-    return msg.message ?? '';
+
+    const raw = msg.message ?? '';
+    const plain = raw ? await ChatCrypto.safeDecrypt(raw) : '';
+
+    if (plain?.startsWith(ROOM_CARD_PREFIX)) {
+      try {
+        const data = JSON.parse(plain.replace(ROOM_CARD_PREFIX, ''));
+        return `🏠 ${data.title}`;
+      } catch {
+        return '🏠 Thông tin phòng';
+      }
+    }
+
+    return plain;
   }
 
   private async decryptAndPush(msg: ChatMessagePayload): Promise<void> {
     const raw = msg.message ?? '';
     const plain = raw ? await ChatCrypto.safeDecrypt(raw) : '';
-    this.messages.push({ ...msg, message: plain } as DisplayMessage);
+    const parsed = parseRoomCard(plain);
+
+    this.messages.push({
+      ...msg,
+      message: parsed.extraText,
+      _roomCard: parsed.card,
+    });
     this.cdr.detectChanges();
   }
 
-  // ── Load conversations ───────────────────────────────────────────
+  // ── Load conversations ────────────────────────────────────────────────────
 
   loadConversations(autoSelectId?: string): void {
     this.chatService.getMyChats(this.userId).subscribe({
-      next: (list: any[]) => {
-        this.conversations = list.map((c) => ({
-          partnerId: c.partnerId ?? c.partner_id ?? '',
-          partnerName: c.partnerName ?? c.partner_name ?? 'Người dùng',
-          partnerAvatar: c.partnerAvatar ?? c.partner_avatar ?? '',
-          lastMessage: c.lastMessage ?? c.last_message ?? '',
-          lastTime: c.lastTime ?? c.last_time ?? '',
-          unreadCount: c.unreadCount ?? c.unread_count ?? 0,
-        }));
+      next: async (list: any[]) => {
+        const convs = await Promise.all(
+          list.map(async (c) => {
+            const raw = c.lastMessage ?? c.last_message ?? '';
+
+            const plain = raw ? await ChatCrypto.safeDecrypt(raw) : '';
+
+            let lastMsg = plain;
+
+            if (plain?.startsWith(ROOM_CARD_PREFIX)) {
+              try {
+                const data = JSON.parse(plain.replace(ROOM_CARD_PREFIX, ''));
+                lastMsg = `🏠 ${data.title}`;
+              } catch {
+                lastMsg = '🏠 Thông tin phòng';
+              }
+            }
+
+            return {
+              partnerId: c.partnerId ?? c.partner_id ?? '',
+              partnerName: c.partnerName ?? c.partner_name ?? 'Người dùng',
+              partnerAvatar: c.partnerAvatar ?? c.partner_avatar ?? '',
+              lastMessage: lastMsg,
+              lastTime: c.lastTime ?? c.last_time ?? '',
+              unreadCount: c.unreadCount ?? c.unread_count ?? 0,
+            };
+          }),
+        );
+
+        // Dedup: giữ lại 1 conv mới nhất cho mỗi partnerId (backend có thể trả về trùng)
+        const dedupMap = new Map<string, (typeof convs)[0]>();
+        for (const c of convs) {
+          const key = c.partnerId.toLowerCase();
+          const prev = dedupMap.get(key);
+          if (!prev || new Date(c.lastTime).getTime() > new Date(prev.lastTime).getTime()) {
+            dedupMap.set(key, c);
+          }
+        }
+        this.conversations = Array.from(dedupMap.values());
         this.sortConvs();
 
         if (autoSelectId) {
-          const existing = this.conversations.find((c) => c.partnerId === autoSelectId);
+          // So sánh case-insensitive để tránh mismatch UUID uppercase/lowercase
+          const normalId = autoSelectId.toLowerCase();
+          const existing = this.conversations.find((c) => c.partnerId.toLowerCase() === normalId);
           if (existing) {
+            // Cập nhật lại tên/avatar từ route params (phòng trường hợp conv cũ thiếu info)
+            const nameFromRoute = this.route.snapshot.queryParamMap.get('partnerName');
+            const avatarFromRoute = this.route.snapshot.queryParamMap.get('partnerAvatar');
+            if (nameFromRoute) existing.partnerName = nameFromRoute;
+            if (avatarFromRoute) existing.partnerAvatar = avatarFromRoute;
             this.selectConversation(existing);
           } else {
+            // Chỉ tạo conv tạm khi thực sự không tồn tại trong list từ API
             const nc = this.buildNewConv(autoSelectId);
             this.conversations.unshift(nc);
             this.selectConversation(nc);
           }
         }
+
         this.cdr.detectChanges();
       },
+
       error: () => {
         if (autoSelectId) {
           const nc = this.buildNewConv(autoSelectId);
@@ -301,7 +460,7 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     };
   }
 
-  // ── Select conversation ──────────────────────────────────────────
+  // ── Select conversation ───────────────────────────────────────────────────
 
   selectConversation(conv: Conversation): void {
     this.selectedConv = conv;
@@ -316,7 +475,12 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
           (msgs || []).map(async (m) => {
             const raw = m.message ?? m.messageContent ?? '';
             const plain = raw ? await ChatCrypto.safeDecrypt(raw) : '';
-            return { ...m, message: plain } as DisplayMessage;
+            const parsed = parseRoomCard(plain);
+            return {
+              ...m,
+              message: parsed.extraText,
+              _roomCard: parsed.card,
+            };
           }),
         );
         this.messages = decrypted;
@@ -333,7 +497,7 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     });
   }
 
-  // ── File picker ──────────────────────────────────────────────────
+  // ── File picker ───────────────────────────────────────────────────────────
 
   triggerFileInput(): void {
     this.fileInputRef?.nativeElement?.click();
@@ -392,18 +556,77 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.pendingFiles = [];
   }
 
-  // ── Send ─────────────────────────────────────────────────────────
+  // ── Send ──────────────────────────────────────────────────────────────────
 
   send(): void {
     const text = this.messageText.trim();
     const pending = [...this.pendingFiles];
-    if (!text && !pending.length) return;
+    const roomCard = this.pendingRoomCard;
+
+    // Phải có ít nhất một trong: text, file, room card
+    if (!text && !pending.length && !roomCard) return;
     if (!this.selectedConv) return;
 
     this.messageText = '';
     this.pendingFiles = [];
+    // Xóa room card preview sau khi gửi
+    if (roomCard) this.pendingRoomCard = null;
 
     const localId = `local_${++this.localCounter}_${Date.now()}`;
+
+    if (roomCard && !pending.length) {
+      const cardText = encodeRoomCard(roomCard);
+
+      const optimisticCard: DisplayMessage = {
+        _localId: localId,
+        senderId: this.userId,
+        receiverId: this.selectedConv!.partnerId,
+        message: '',
+        _roomCard: roomCard,
+        createdAt: new Date().toISOString(),
+        type: 'MESSAGE',
+      };
+
+      this.messages.push(optimisticCard);
+
+      if (text) {
+        const optimisticText: DisplayMessage = {
+          _localId: `${localId}_text`,
+          senderId: this.userId,
+          receiverId: this.selectedConv!.partnerId,
+          message: text,
+          createdAt: new Date().toISOString(),
+          type: 'MESSAGE',
+        };
+
+        this.messages.push(optimisticText);
+      }
+
+      this.shouldScroll = true;
+      this.cdr.detectChanges();
+
+      this.chatService.sendMessage({
+        roomId: this.roomId || roomCard.roomId,
+        senderId: this.userId,
+        receiverId: this.selectedConv!.partnerId,
+        message: cardText,
+      });
+
+      if (text) {
+        this.chatService.sendMessage({
+          roomId: this.roomId || roomCard.roomId,
+          senderId: this.userId,
+          receiverId: this.selectedConv!.partnerId,
+          message: text,
+        });
+      }
+
+      this.selectedConv.lastMessage = text || '🏠 Thông tin phòng';
+      this.selectedConv.lastTime = new Date().toISOString();
+      this.sortConvs();
+      this.cdr.detectChanges();
+      return;
+    }
 
     if (pending.length) {
       const optimistic: DisplayMessage = {
@@ -512,11 +735,30 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     }
   }
 
-  // ── Context Menu (chuột phải / long press) ──────────────────────
+  // ── Helpers: room card ────────────────────────────────────────────────────
+
+  isRoomCard(m: DisplayMessage): boolean {
+    return !!m._roomCard;
+  }
+
+  viewRoom(roomId: number): void {
+    this.router.navigate(['/room-detail', roomId]);
+  }
+
+  formatPrice(price: number): string {
+    if (!price) return 'Liên hệ';
+    if (price >= 1_000_000) {
+      const m = price / 1_000_000;
+      return (m % 1 === 0 ? `${m}` : `${m.toFixed(1)}`) + ' triệu/tháng';
+    }
+    return `${(price / 1000).toFixed(0)}k/tháng`;
+  }
+
+  // ── Context Menu ──────────────────────────────────────────────────────────
 
   onMessageContextMenu(event: MouseEvent, message: DisplayMessage): void {
     event.preventDefault();
-    if (!message.messageId) return; // chưa save
+    if (!message.messageId) return;
     this.openContextMenu(event.clientX, event.clientY, message);
   }
 
@@ -544,14 +786,12 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   private openContextMenu(x: number, y: number, message: DisplayMessage): void {
-    // Điều chỉnh vị trí để menu không ra ngoài màn hình
     const menuW = 220,
       menuH = 200;
     const vw = window.innerWidth,
       vh = window.innerHeight;
     const finalX = x + menuW > vw ? x - menuW : x;
     const finalY = y + menuH > vh ? y - menuH : y;
-
     this.contextMenu = { open: true, x: finalX, y: finalY, message };
   }
 
@@ -559,7 +799,7 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.contextMenu = { open: false, x: 0, y: 0, message: null };
   }
 
-  // ── React ────────────────────────────────────────────────────────
+  // ── React ─────────────────────────────────────────────────────────────────
 
   sendReaction(emoji: string): void {
     const msg = this.contextMenu.message;
@@ -573,46 +813,40 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
         emoji,
       })
       .subscribe({
-        next: () => {}, // WebSocket sẽ update
+        next: () => {},
         error: (e) => console.error('React error', e),
       });
   }
 
-  // ── Thu hồi ──────────────────────────────────────────────────────
+  // ── Thu hồi ───────────────────────────────────────────────────────────────
 
   recallForMe(): void {
     const msg = this.contextMenu.message;
     if (!msg?.messageId) return;
     this.closeContextMenu();
-
     this.chatService
       .recallMessage({
         messageId: msg.messageId,
         senderId: this.userId,
         recallForAll: false,
       })
-      .subscribe({
-        error: (e) => console.error('Recall error', e),
-      });
+      .subscribe({ error: (e) => console.error('Recall error', e) });
   }
 
   recallForAll(): void {
     const msg = this.contextMenu.message;
     if (!msg?.messageId) return;
     this.closeContextMenu();
-
     this.chatService
       .recallMessage({
         messageId: msg.messageId,
         senderId: this.userId,
         recallForAll: true,
       })
-      .subscribe({
-        error: (e) => console.error('Recall error', e),
-      });
+      .subscribe({ error: (e) => console.error('Recall error', e) });
   }
 
-  // ── Kiểm tra trạng thái hiển thị ─────────────────────────────────
+  // ── Kiểm tra trạng thái ───────────────────────────────────────────────────
 
   isRecalledForMe(m: DisplayMessage): boolean {
     if (m.recalledForAll) return true;
@@ -631,7 +865,7 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
       .map(([emoji, count]) => ({ emoji, count }));
   }
 
-  // ── Helpers ──────────────────────────────────────────────────────
+  // ── Helpers ───────────────────────────────────────────────────────────────
 
   isMe(m: DisplayMessage): boolean {
     return (m.senderId ?? '') === this.userId;
@@ -716,7 +950,7 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     return i;
   }
 
-  // ── Lightbox ─────────────────────────────────────────────────────
+  // ── Lightbox ──────────────────────────────────────────────────────────────
 
   openLightbox(
     items: { url: string; fileType: 'IMAGE' | 'VIDEO'; isLocal: boolean }[],

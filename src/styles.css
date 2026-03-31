@@ -5,8 +5,10 @@
   font-family: 'Poppins', sans-serif;
 }
 
-body {
-  padding-bottom: 70px; /* chiều cao nav dưới */
+@media (max-width: 1023px) {
+  body {
+    padding-bottom: 70px;
+  }
 }
 
 /* ===== marker phòng ===== */

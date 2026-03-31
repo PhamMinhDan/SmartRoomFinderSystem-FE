@@ -47,6 +47,10 @@ export class EditRoomComponent implements OnInit, OnDestroy, AfterViewInit {
   submitted = false;
   errorMsg = '';
 
+  /** Đang có pending edit request chờ duyệt */
+  hasPendingEdit = false;
+  pendingEditId: number | null = null;
+
   // ── Form ──────────────────────────────────────────────────────
   roomForm!: FormGroup;
   locationForm!: FormGroup;
@@ -67,15 +71,11 @@ export class EditRoomComponent implements OnInit, OnDestroy, AfterViewInit {
   fullAddress = '';
 
   // ── Media ─────────────────────────────────────────────────────
-  /** URL ảnh đã có trên server */
   existingImageUrls: string[] = [];
-  /** File ảnh mới người dùng chọn thêm */
   newImageFiles: File[] = [];
-  /** Preview blob URL cho file mới */
   newImagePreviews: string[] = [];
   imageError = '';
 
-  /** Tổng preview = existing + new */
   get imagePreviews(): string[] {
     return [...this.existingImageUrls, ...this.newImagePreviews];
   }
@@ -85,7 +85,6 @@ export class EditRoomComponent implements OnInit, OnDestroy, AfterViewInit {
   videoUploading = false;
   videoProgress = 0;
   videoError = '';
-  /** URL video đã có trên server (giữ lại nếu user không đổi) */
   existingVideoUrl: string | null = null;
 
   // ── Amenities ─────────────────────────────────────────────────
@@ -131,13 +130,13 @@ export class EditRoomComponent implements OnInit, OnDestroy, AfterViewInit {
       houseNumber: [''],
     });
 
-    // Load danh sách tỉnh/thành trước, rồi load room (preselect cần cities[])
     this.locationService.getCities().subscribe((data) => {
       this.cities = data;
       this.loadRoom();
     });
 
     this.loadAmenities();
+    this.checkPendingEdit();
   }
 
   ngAfterViewInit(): void {}
@@ -146,6 +145,21 @@ export class EditRoomComponent implements OnInit, OnDestroy, AfterViewInit {
     if (this.map) {
       this.map.remove();
       this.map = null;
+    }
+  }
+
+  // ── Kiểm tra có pending edit chưa ────────────────────────────
+  async checkPendingEdit(): Promise<void> {
+    try {
+      const res: any = await firstValueFrom(
+        this.http.get(`${environment.apiUrl}/rooms/${this.roomId}/edit-request/pending`),
+      );
+      if (res?.data && res.data !== null) {
+        this.hasPendingEdit = true;
+        this.pendingEditId = res.data.editRequestId;
+      }
+    } catch {
+      // bỏ qua
     }
   }
 
@@ -159,7 +173,6 @@ export class EditRoomComponent implements OnInit, OnDestroy, AfterViewInit {
           return;
         }
 
-        // Patch form fields
         this.roomForm.patchValue({
           title: r.title ?? '',
           pricePerMonth: r.pricePerMonth ?? null,
@@ -172,20 +185,27 @@ export class EditRoomComponent implements OnInit, OnDestroy, AfterViewInit {
           availableFrom: r.availableFrom ?? null,
         });
 
-        // Địa chỉ hiển thị
-        const parts = [r.address, r.wardName, r.districtName, r.cityName].filter(Boolean);
+        const addr = r.address || {};
+        const parts = [
+          addr.street_address,
+          addr.ward_name,
+          addr.district_name,
+          addr.city_name,
+        ].filter(Boolean);
         this.fullAddress = parts.join(', ');
 
-        // Patch locationForm để modal hiện đúng giá trị
-        const addrParts = (r.address ?? '').split(' ');
+        const street = r.address?.street_address || '';
+        const addrParts = street.split(' ');
         const houseNumber = /^\d/.test(addrParts[0]) ? addrParts[0] : '';
-        const streetName = houseNumber ? addrParts.slice(1).join(' ') : (r.address ?? '');
+        const streetName = houseNumber ? addrParts.slice(1).join(' ') : street;
         this.locationForm.patchValue({ streetName, houseNumber });
 
-        // Preselect city/district/ward
-        this.preselectLocation(r.cityName, r.districtName, r.wardName);
+        this.preselectLocation(
+          r.address?.city_name,
+          r.address?.district_name,
+          r.address?.ward_name,
+        );
 
-        // Phân loại media (ảnh vs video)
         if (r.images?.length) {
           r.images.forEach((img: any) => {
             const url: string = img.imageUrl ?? '';
@@ -198,7 +218,6 @@ export class EditRoomComponent implements OnInit, OnDestroy, AfterViewInit {
           });
         }
 
-        // Tiện ích đã chọn
         if (r.amenities?.length) {
           this.selectedAmenityIds = r.amenities.map((a: any) => a.amenityId);
         }
@@ -213,7 +232,6 @@ export class EditRoomComponent implements OnInit, OnDestroy, AfterViewInit {
     });
   }
 
-  /** Preselect dropdown dựa vào tên thành phố/quận/phường */
   private preselectLocation(cityName: string, districtName: string, wardName: string): void {
     const city = this.cities.find((c) => c.name === cityName);
     if (!city) return;
@@ -397,7 +415,7 @@ export class EditRoomComponent implements OnInit, OnDestroy, AfterViewInit {
     this.videoError = '';
     this.videoFile = file;
     this.videoPreview = URL.createObjectURL(file);
-    this.existingVideoUrl = null; // dùng file mới thay thế
+    this.existingVideoUrl = null;
   }
 
   // ── Amenities ─────────────────────────────────────────────────
@@ -423,13 +441,22 @@ export class EditRoomComponent implements OnInit, OnDestroy, AfterViewInit {
     this.customAmenities.splice(i, 1);
   }
 
-  // ── Submit (PUT /api/rooms/{id}) ──────────────────────────────
+  // ── Submit → gửi edit-request thay vì PUT trực tiếp ──────────
   async submitRoom(): Promise<void> {
     this.submitted = true;
     this.errorMsg = '';
 
     if (this.roomForm.invalid || !this.fullAddress) {
       this.roomForm.markAllAsTouched();
+      return;
+    }
+
+    // Nếu đã có pending edit, không cho gửi thêm
+    if (this.hasPendingEdit) {
+      this.toastService.show(
+        '⏳ Phòng này đang có yêu cầu chỉnh sửa chờ admin duyệt. Vui lòng chờ kết quả.',
+        'warning',
+      );
       return;
     }
 
@@ -449,12 +476,10 @@ export class EditRoomComponent implements OnInit, OnDestroy, AfterViewInit {
         videoUrl = await this.uploadFile(this.videoFile);
       }
 
-      // Ghép tất cả media URL: ảnh cũ + ảnh mới + video
       const allMediaUrls = [...this.existingImageUrls, ...uploadedNewUrls];
       if (videoUrl) allMediaUrls.push(videoUrl);
 
       const { streetName, houseNumber } = this.locationForm.value;
-      const address = [houseNumber, streetName].filter(Boolean).join(' ').trim();
 
       const fv = this.roomForm.value;
       const payload = {
@@ -467,27 +492,44 @@ export class EditRoomComponent implements OnInit, OnDestroy, AfterViewInit {
         capacity: fv.capacity,
         furnishLevel: fv.furnishLevel,
         availableFrom: fv.availableFrom,
-        address,
-        wardName: this.selectedWard?.name ?? '',
-        districtName: this.selectedDistrict?.name ?? '',
-        cityName: this.selectedCity?.name ?? '',
+        streetAddress: [houseNumber, streetName].filter(Boolean).join(' '),
+        wardName: this.selectedWard?.name,
+        districtName: this.selectedDistrict?.name,
+        cityName: this.selectedCity?.name,
         amenityIds: this.selectedAmenityIds,
         mediaUrls: allMediaUrls,
-        // KHÔNG gửi displayUntil → backend giữ nguyên giá trị cũ
       };
 
-      this.http.put<any>(`${environment.apiUrl}/rooms/${this.roomId}`, payload).subscribe({
-        next: () => {
-          this.toastService.show('✅ Cập nhật tin thành công!', 'success');
-          this.router.navigate(['/my-posts']);
-        },
-        error: (err) => {
-          this.errorMsg = err?.error?.message || 'Cập nhật thất bại, vui lòng thử lại.';
-          this.submitLoading = false;
-        },
-      });
+      // ★ Gọi POST /edit-request thay vì PUT /rooms/{id}
+      this.http
+        .post<any>(`${environment.apiUrl}/rooms/${this.roomId}/edit-request`, payload)
+        .subscribe({
+          next: () => {
+            this.toastService.show(
+              '📝 Yêu cầu chỉnh sửa đã được gửi! Vui lòng chờ admin phê duyệt.',
+              'info',
+            );
+            this.hasPendingEdit = true;
+            this.submitLoading = false;
+            // Chờ 2 giây rồi điều hướng
+            setTimeout(() => this.router.navigate(['/my-posts']), 2000);
+          },
+          error: (err) => {
+            const msg = err?.error?.message || 'Gửi yêu cầu thất bại, vui lòng thử lại.';
+            // 409 Conflict = đã có pending request
+            if (err.status === 409) {
+              this.toastService.show('⏳ ' + msg, 'warning');
+              this.hasPendingEdit = true;
+            } else {
+              this.errorMsg = msg;
+              this.toastService.show(' ' + msg, 'error');
+            }
+            this.submitLoading = false;
+          },
+        });
     } catch {
       this.errorMsg = 'Upload ảnh thất bại, vui lòng thử lại.';
+      this.toastService.show(' Upload ảnh thất bại', 'error');
       this.submitLoading = false;
     }
   }
@@ -499,9 +541,7 @@ export class EditRoomComponent implements OnInit, OnDestroy, AfterViewInit {
   async uploadFile(file: File): Promise<string> {
     const formData = new FormData();
     formData.append('file', file);
-
     const res: any = await firstValueFrom(this.http.post(`${environment.apiUrl}/upload`, formData));
-
     return res.url;
   }
 }
