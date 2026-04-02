@@ -117,6 +117,7 @@ export class ChatService {
   uploadChatMedia(file: File): Observable<UploadMediaResponse> {
     const fd = new FormData();
     fd.append('file', file);
+    fd.append('secureId', `chat/${crypto.randomUUID()}`);
     return this.http.post<UploadMediaResponse>(`${environment.apiUrl}/upload/chat-media`, fd);
   }
 

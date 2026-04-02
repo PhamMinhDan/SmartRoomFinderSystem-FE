@@ -198,10 +198,11 @@ export class ManagePostsComponent implements OnInit, OnDestroy {
   updateTabCounts() {
     const now = new Date();
     this.tabs[0].count = this.rooms.filter(
-      (r) => r.isApproved && r.isActive && (!r.displayUntil || new Date(r.displayUntil) >= now),
+      (r) => r.isApproved && r.isActive && (!r.expiredAt || new Date(r.expiredAt) >= now),
     ).length;
+
     this.tabs[1].count = this.rooms.filter(
-      (r) => r.displayUntil && new Date(r.displayUntil) < now,
+      (r) => r.expiredAt && new Date(r.expiredAt) < now,
     ).length;
     this.tabs[2].count = this.rooms.filter((r) => r.rejectedByAdmin).length;
     this.tabs[3].count = this.rooms.filter((r) => !r.isApproved && !r.rejectedByAdmin).length;
@@ -229,10 +230,10 @@ export class ManagePostsComponent implements OnInit, OnDestroy {
 
     if (this.activeTab === 'all') {
       list = list.filter(
-        (r) => r.isApproved && r.isActive && (!r.displayUntil || new Date(r.displayUntil) >= now),
+        (r) => r.isApproved && r.isActive && (!r.expiredAt || new Date(r.expiredAt) >= now),
       );
     } else if (this.activeTab === 'expired') {
-      list = list.filter((r) => r.displayUntil && new Date(r.displayUntil) < now);
+      list = list.filter((r) => r.expiredAt && new Date(r.expiredAt) < now);
     } else if (this.activeTab === 'rejected') {
       list = list.filter((r) => r.rejectedByAdmin);
     } else if (this.activeTab === 'pending') {
@@ -482,10 +483,6 @@ export class ManagePostsComponent implements OnInit, OnDestroy {
   }
   isExpired(dateStr?: string): boolean {
     if (!dateStr) return false;
-
-    const now = new Date();
-    const expire = new Date(dateStr);
-
-    return expire < now;
+    return new Date(dateStr) < new Date();
   }
 }

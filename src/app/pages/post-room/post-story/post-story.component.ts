@@ -23,7 +23,6 @@ interface Amenity {
   category?: string;
 }
 
-/** Khớp với RoomAddressResponse.java */
 export interface RoomAddressResponse {
   room_address_id: number;
   street_address: string;
@@ -65,7 +64,6 @@ export class PostRoomComponent implements OnInit {
   openLocDropdown: string | null = null;
   fullAddress = '';
 
-  // Lưu tọa độ geocoded từ Mapbox để gửi lên BE
   private geocodedLatitude: number | null = null;
   private geocodedLongitude: number | null = null;
 
@@ -85,6 +83,11 @@ export class PostRoomComponent implements OnInit {
   customAmenities: string[] = [];
   customAmenityInput = '';
   showCustomInput = false;
+  amenityError = '';
+
+  // Price display (formatted string for display, actual number for submit)
+  priceDisplayValue = '';
+  depositDisplayValue = '';
 
   // Map
   private map: any;
@@ -107,17 +110,9 @@ export class PostRoomComponent implements OnInit {
       description: [''],
       pricePerMonth: [
         null,
-        [
-          Validators.required,
-          Validators.min(1000),
-          Validators.max(1_000_000_000),
-          Validators.pattern(/^\d{1,10}$/),
-        ],
+        [Validators.required, Validators.min(1000), Validators.max(1_000_000_000)],
       ],
-      depositAmount: [
-        null,
-        [Validators.min(0), Validators.max(1_000_000_000), Validators.pattern(/^\d{1,10}$/)],
-      ],
+      depositAmount: [null, [Validators.min(0), Validators.max(1_000_000_000)]],
       areaSize: [null, [Validators.required, Validators.min(1), Validators.max(1000)]],
       roomType: ['', Validators.required],
       capacity: [1, [Validators.min(1), Validators.max(5)]],
@@ -137,7 +132,51 @@ export class PostRoomComponent implements OnInit {
     });
   }
 
+  // ── Price formatting helpers ──────────────────────────────────
+
+  /** Format số thành chuỗi có dấu chấm ngăn cách (VD: 2.000.000) */
+  formatNumber(value: number | string | null): string {
+    if (value === null || value === undefined || value === '') return '';
+    const num = typeof value === 'string' ? parseInt(value.replace(/\./g, ''), 10) : value;
+    if (isNaN(num)) return '';
+    return num.toLocaleString('vi-VN');
+  }
+
+  /** Khi user gõ vào ô giá thuê */
+  onPriceInput(event: Event) {
+    const input = event.target as HTMLInputElement;
+    // Lấy chỉ các chữ số
+    const raw = input.value.replace(/\D/g, '');
+    const num = raw ? parseInt(raw, 10) : null;
+
+    // Cập nhật form control với số thực
+    this.roomForm.patchValue({ pricePerMonth: num }, { emitEvent: false });
+
+    // Hiển thị có dấu chấm
+    this.priceDisplayValue = raw ? parseInt(raw, 10).toLocaleString('vi-VN') : '';
+
+    // Di chuyển cursor về cuối
+    setTimeout(() => {
+      input.setSelectionRange(this.priceDisplayValue.length, this.priceDisplayValue.length);
+    }, 0);
+  }
+
+  /** Khi user gõ vào ô tiền cọc */
+  onDepositInput(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const raw = input.value.replace(/\D/g, '');
+    const num = raw ? parseInt(raw, 10) : null;
+
+    this.roomForm.patchValue({ depositAmount: num }, { emitEvent: false });
+    this.depositDisplayValue = raw ? parseInt(raw, 10).toLocaleString('vi-VN') : '';
+
+    setTimeout(() => {
+      input.setSelectionRange(this.depositDisplayValue.length, this.depositDisplayValue.length);
+    }, 0);
+  }
+
   // ── Amenities ─────────────────────────────────────────────────
+
   loadAmenities() {
     this.http.get<any>(`${environment.apiUrl}/amenities`).subscribe({
       next: (res) => {
@@ -156,6 +195,10 @@ export class PostRoomComponent implements OnInit {
   toggleAmenity(id: number) {
     if (this.selectedAmenityIds.has(id)) this.selectedAmenityIds.delete(id);
     else this.selectedAmenityIds.add(id);
+    // Xóa lỗi khi user chọn
+    if (this.selectedAmenityIds.size > 0 || this.customAmenities.length > 0) {
+      this.amenityError = '';
+    }
   }
 
   addCustomAmenity() {
@@ -163,6 +206,7 @@ export class PostRoomComponent implements OnInit {
     if (val && !this.customAmenities.includes(val)) {
       this.customAmenities.push(val);
       this.customAmenityInput = '';
+      this.amenityError = '';
     }
   }
 
@@ -171,6 +215,7 @@ export class PostRoomComponent implements OnInit {
   }
 
   // ── Images ────────────────────────────────────────────────────
+
   triggerImageInput() {
     this.imageInput.nativeElement.click();
   }
@@ -234,6 +279,7 @@ export class PostRoomComponent implements OnInit {
   }
 
   // ── Location ──────────────────────────────────────────────────
+
   loadCities() {
     this.locationService.getCities().subscribe((data) => {
       this.cities = data;
@@ -243,6 +289,7 @@ export class PostRoomComponent implements OnInit {
   openLocationModal() {
     this.showLocationModal = true;
   }
+
   closeLocationModal() {
     this.showLocationModal = false;
     this.openLocDropdown = null;
@@ -280,11 +327,13 @@ export class PostRoomComponent implements OnInit {
   filteredCities() {
     return this.cities.filter((c) => c.name.toLowerCase().includes(this.citySearch.toLowerCase()));
   }
+
   filteredDistricts() {
     return this.districts.filter((d) =>
       d.name.toLowerCase().includes(this.districtSearch.toLowerCase()),
     );
   }
+
   filteredWards() {
     return this.wards.filter((w) => w.name.toLowerCase().includes(this.wardSearch.toLowerCase()));
   }
@@ -331,8 +380,6 @@ export class PostRoomComponent implements OnInit {
       if (!feature) return;
 
       const [lng, lat] = feature.center;
-
-      // ── Lưu tọa độ để gửi lên BE ──────────────────────────────
       this.geocodedLongitude = lng;
       this.geocodedLatitude = lat;
 
@@ -342,9 +389,15 @@ export class PostRoomComponent implements OnInit {
   }
 
   // ── Submit ────────────────────────────────────────────────────
+
   async submitRoom() {
     this.submitted = true;
     this.roomForm.markAllAsTouched();
+
+    // Validate amenities bắt buộc
+    if (this.selectedAmenityIds.size === 0 && this.customAmenities.length === 0) {
+      this.amenityError = 'Vui lòng chọn ít nhất một tiện ích';
+    }
 
     const error = this.validateForm();
     if (error) {
@@ -362,6 +415,7 @@ export class PostRoomComponent implements OnInit {
         this.imageFiles.map((file) => {
           const fd = new FormData();
           fd.append('file', file);
+          fd.append('secureId', `room/image_${crypto.randomUUID()}`);
           return firstValueFrom(this.http.post(`${environment.apiUrl}/upload`, fd));
         }),
       );
@@ -370,27 +424,23 @@ export class PostRoomComponent implements OnInit {
       if (this.videoFile) {
         const fd = new FormData();
         fd.append('file', this.videoFile);
+        fd.append('secureId', `room/video_${crypto.randomUUID()}`);
         const res: any = await firstValueFrom(this.http.post(`${environment.apiUrl}/upload`, fd));
         mediaUrls.push(res.url);
       }
 
-      // ── Build streetAddress (số nhà + tên đường) ──────────────
       const streetAddress = this.locationForm.value.houseNumber
         ? `${this.locationForm.value.houseNumber} ${this.locationForm.value.streetName}`
         : this.locationForm.value.streetName;
 
-      // ── Payload gửi lên BE — khớp với CreateRoomRequest.java ──
       const payload = {
         ...this.roomForm.value,
-
-        // địa chỉ tách riêng (field name khớp BE)
         streetAddress,
         cityName: this.selectedCity?.name,
         districtName: this.selectedDistrict?.name,
         wardName: this.selectedWard?.name,
         latitude: this.geocodedLatitude,
         longitude: this.geocodedLongitude,
-
         mediaUrls,
         amenityIds: Array.from(this.selectedAmenityIds),
         customAmenities: this.customAmenities,
@@ -416,12 +466,17 @@ export class PostRoomComponent implements OnInit {
     const f = this.roomForm;
     if (f.get('title')?.invalid) return 'Vui lòng nhập tiêu đề';
     if (f.get('pricePerMonth')?.errors?.['required']) return 'Vui lòng nhập giá thuê';
+    if (f.get('pricePerMonth')?.errors?.['min']) return 'Giá thuê tối thiểu 1.000đ';
     if (f.get('pricePerMonth')?.errors?.['max']) return 'Giá thuê quá lớn (tối đa 1 tỷ)';
-    if (f.get('pricePerMonth')?.errors?.['pattern']) return 'Giá thuê không hợp lệ';
     if (f.get('depositAmount')?.errors?.['max']) return 'Tiền cọc quá lớn';
+    if (f.get('areaSize')?.errors?.['required']) return 'Vui lòng nhập diện tích';
     if (f.get('areaSize')?.errors?.['min']) return 'Diện tích phải lớn hơn 0';
+    if (f.get('roomType')?.invalid) return 'Vui lòng chọn loại phòng';
     if (!this.fullAddress) return 'Vui lòng chọn địa chỉ';
     if (this.imageFiles.length === 0) return 'Vui lòng chọn ít nhất 1 ảnh';
+    if (this.selectedAmenityIds.size === 0 && this.customAmenities.length === 0) {
+      return 'Vui lòng chọn ít nhất một tiện ích';
+    }
     return '';
   }
 }

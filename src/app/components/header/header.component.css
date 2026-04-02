@@ -5,6 +5,9 @@ header {
 .user-menu-dropdown {
   animation: slideDown 0.2s ease-out;
 }
+.noti {
+  border: 0.5px solid rgb(0, 0, 0, 0.3);
+}
 
 @keyframes slideDown {
   from {
