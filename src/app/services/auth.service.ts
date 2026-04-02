@@ -48,6 +48,12 @@ export interface ApiResponse<T> {
   data: T;
   message: string;
   success: boolean;
+  error?: string;
+}
+
+export interface BanInfo {
+  ban_reason: string;
+  banned_at: string | null;
 }
 
 @Injectable({

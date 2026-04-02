@@ -22,6 +22,9 @@ export class IdentityVerifyComponent implements OnInit, OnDestroy {
   verifyForm!: FormGroup;
   currentStep = 1;
   alreadyVerified = false;
+  // 'none' | 'pending' | 'rejected'
+  verificationStatus: 'none' | 'pending' | 'rejected' = 'none';
+  rejectReason = '';
   submitLoading = false;
   errorMsg = '';
 
@@ -56,17 +59,46 @@ export class IdentityVerifyComponent implements OnInit, OnDestroy {
 
     const user = this.authService.currentUserValue;
     if (user?.phone_number) {
-      this.verifyForm.patchValue({
-        phoneNumber: user.phone_number,
-      });
+      this.verifyForm.patchValue({ phoneNumber: user.phone_number });
     }
+
     if (user?.identity_verified) {
       this.alreadyVerified = true;
+    } else {
+      // Kiểm tra trạng thái xác thực hiện tại từ BE
+      this.checkVerificationStatus();
     }
   }
 
   ngOnDestroy(): void {
     this.stopCamera();
+  }
+
+  /** Gọi API /me để lấy trạng thái xác thực mới nhất */
+  private checkVerificationStatus(): void {
+    this.http.get<any>(`${environment.apiUrl}/identity-verification/me`).subscribe({
+      next: (res) => {
+        const data = res?.data;
+        if (!data) {
+          this.verificationStatus = 'none';
+          return;
+        }
+        if (data.status === 'pending') {
+          this.verificationStatus = 'pending';
+        } else if (data.status === 'rejected') {
+          this.verificationStatus = 'rejected';
+          this.rejectReason = data.rejectReason || '';
+        } else if (data.status === 'approved') {
+          this.alreadyVerified = true;
+        } else {
+          this.verificationStatus = 'none';
+        }
+      },
+      error: () => {
+        // Chưa có bản ghi nào → cho phép gửi mới
+        this.verificationStatus = 'none';
+      },
+    });
   }
 
   triggerFileInput(side: 'front' | 'back') {
@@ -125,12 +157,20 @@ export class IdentityVerifyComponent implements OnInit, OnDestroy {
     this.cameraActive = false;
   }
 
+  /** Nút "Tiếp tục" */
   async proceedToStep2() {
+    // Đã verified → vào thẳng post-room
     if (this.alreadyVerified) {
       this.router.navigate(['/post-room']);
       return;
     }
 
+    // Đang pending → không làm gì, UI đã hiển thị trạng thái chờ
+    if (this.verificationStatus === 'pending') {
+      return;
+    }
+
+    // Validate form
     this.verifyForm.markAllAsTouched();
     if (this.verifyForm.invalid) return;
     if (!this.frontFile || !this.backFile) {
@@ -142,11 +182,18 @@ export class IdentityVerifyComponent implements OnInit, OnDestroy {
     this.errorMsg = '';
 
     try {
-      const frontUrl = await this.uploadImage(this.frontFile);
-      const backUrl = await this.uploadImage(this.backFile);
+      const frontUrl = await this.uploadImage(
+        this.frontFile,
+        `verify/front_${crypto.randomUUID()}`,
+      );
+
+      const backUrl = await this.uploadImage(this.backFile, `verify/back_${crypto.randomUUID()}`);
       let selfieUrl = '';
       if (this.selfiePreview) {
-        selfieUrl = await this.uploadBase64Image(this.selfiePreview);
+        selfieUrl = await this.uploadBase64Image(
+          this.selfiePreview,
+          `verify/selfie_${crypto.randomUUID()}`,
+        );
       }
 
       const payload = {
@@ -158,7 +205,9 @@ export class IdentityVerifyComponent implements OnInit, OnDestroy {
       };
 
       await firstValueFrom(this.http.post(`${environment.apiUrl}/identity-verification`, payload));
-      this.router.navigate(['/post-room']);
+
+      // Sau khi gửi thành công → chuyển sang trạng thái pending, KHÔNG navigate
+      this.verificationStatus = 'pending';
     } catch (err: any) {
       this.errorMsg = err?.error?.message || 'Gửi xác minh thất bại. Vui lòng thử lại.';
     } finally {
@@ -166,16 +215,21 @@ export class IdentityVerifyComponent implements OnInit, OnDestroy {
     }
   }
 
-  private async uploadImage(file: File): Promise<string> {
+  private async uploadImage(file: File, secureId: string): Promise<string> {
     const formData = new FormData();
     formData.append('file', file);
+
+    formData.append('secureId', secureId);
+
     const res: any = await firstValueFrom(this.http.post(`${environment.apiUrl}/upload`, formData));
+
     return res.url;
   }
 
-  private async uploadBase64Image(base64: string): Promise<string> {
+  private async uploadBase64Image(base64: string, secureId: string): Promise<string> {
     const blob = await fetch(base64).then((r) => r.blob());
     const file = new File([blob], 'selfie.jpg', { type: 'image/jpeg' });
-    return this.uploadImage(file);
+
+    return this.uploadImage(file, secureId);
   }
 }

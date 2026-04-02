@@ -541,7 +541,10 @@ export class EditRoomComponent implements OnInit, OnDestroy, AfterViewInit {
   async uploadFile(file: File): Promise<string> {
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('secureId', `room/edit_${crypto.randomUUID()}`);
+
     const res: any = await firstValueFrom(this.http.post(`${environment.apiUrl}/upload`, formData));
+
     return res.url;
   }
 }

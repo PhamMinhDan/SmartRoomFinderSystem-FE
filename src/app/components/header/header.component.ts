@@ -9,6 +9,7 @@ import { UserAvatarDropdownComponent } from '../user-avatar-dropdown/user-avatar
 import { Subscription } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ChatService } from '../../services/chat.service';
+
 @Component({
   selector: 'app-header',
   standalone: true,
@@ -17,7 +18,7 @@ import { ChatService } from '../../services/chat.service';
     RouterModule,
     LoginModalComponent,
     ConfirmLogoutModalComponent,
-    UserAvatarDropdownComponent, // ← shared dropdown
+    UserAvatarDropdownComponent,
   ],
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.css'],
@@ -33,6 +34,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   showNotification = false;
 
   private userSub?: Subscription;
+  private notiSub?: Subscription;
 
   constructor(
     private authService: AuthService,
@@ -47,13 +49,14 @@ export class HeaderComponent implements OnInit, OnDestroy {
       if (user) {
         this.chatService.connect(user.user_id);
 
-        this.chatService.notification$.subscribe((noti) => {
-          this.notifications.unshift(noti);
-
-          if (!this.showNotification) {
-            this.unreadCount++;
-          }
-        });
+        if (!this.notiSub) {
+          this.notiSub = this.chatService.notification$.subscribe((noti) => {
+            this.notifications.unshift(noti);
+            if (!this.showNotification) {
+              this.unreadCount++;
+            }
+          });
+        }
       }
     });
 
@@ -66,6 +69,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.userSub?.unsubscribe();
+    this.notiSub?.unsubscribe();
   }
 
   toggleMenu(): void {
@@ -101,14 +105,28 @@ export class HeaderComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Ấn "Đăng tin" trên header:
+   * 1. Chưa login → mở modal login
+   * 2. Đã verified → vào /post-room
+   * 3. Chưa verified → kiểm tra trạng thái pending từ BE
+   *    - Nếu pending → vào /identity-verify (trang sẽ hiển thị trạng thái chờ duyệt)
+   *    - Nếu chưa gửi / rejected → vào /identity-verify (hiển thị form gửi)
+   */
   goToPostRoom(): void {
     if (!this.currentUser) {
       this.openLoginModal();
       return;
     }
-    this.router.navigate(
-      this.currentUser.identity_verified ? ['/post-room'] : ['/identity-verify'],
-    );
+
+    // Đã xác minh danh tính → vào thẳng post-room
+    if (this.currentUser.identity_verified) {
+      this.router.navigate(['/post-room']);
+      return;
+    }
+
+    // Chưa verified → navigate sang identity-verify (component sẽ tự handle trạng thái)
+    this.router.navigate(['/identity-verify']);
   }
 
   goToChat(): void {
@@ -118,6 +136,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     }
     this.router.navigate(['/chat']);
   }
+
   loadNotifications() {
     if (!this.currentUser?.user_id) return;
     this.http
@@ -141,17 +160,25 @@ export class HeaderComponent implements OnInit, OnDestroy {
         )
         .subscribe(() => {
           this.unreadCount = 0;
-          this.notifications = this.notifications.map((n) => ({
-            ...n,
-            isRead: true,
-          }));
+          this.notifications = this.notifications.map((n) => ({ ...n, isRead: true }));
         });
     }
   }
 
-  goToNotification(n: any) {
-    this.showNotification = false;
+  markAllAsRead() {
+    if (!this.currentUser?.user_id) return;
 
+    this.http
+      .patch(`${environment.apiUrl}/notifications/read-all?userId=${this.currentUser.user_id}`, {})
+      .subscribe(() => {
+        this.unreadCount = 0;
+        this.notifications = this.notifications.map((n) => ({ ...n, isRead: true }));
+      });
+  }
+
+  goToNotification(n: any) {
+    n.isRead = true;
+    this.showNotification = false;
     if (n.redirectUrl) {
       this.router.navigateByUrl(n.redirectUrl);
     }
